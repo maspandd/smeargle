@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Project" ADD COLUMN     "currentMajor" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "currentMinor" INTEGER NOT NULL DEFAULT 0;

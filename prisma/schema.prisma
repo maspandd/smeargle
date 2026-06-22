@@ -57,6 +57,8 @@ model Project {
   name         String
   baseEndpoint String
   routeKey     String              @unique
+  currentMajor Int                 @default(1)
+  currentMinor Int                 @default(0)
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   memberships  ProjectMembership[]
