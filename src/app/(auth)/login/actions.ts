@@ -15,8 +15,6 @@ export type LoginActionState = {
   formError?: string;
 };
 
-export const initialLoginState: LoginActionState = {};
-
 export async function loginAction(
   _state: LoginActionState,
   formData: FormData,
