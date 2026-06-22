@@ -12,6 +12,11 @@ enum SystemRole {
   ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
 enum ProjectRole {
   OWNER
   EDITOR
@@ -27,6 +32,7 @@ model User {
   email        String              @unique
   passwordHash String
   systemRole   SystemRole          @default(USER)
+  status       UserStatus          @default(ACTIVE)
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   sessions     Session[]
