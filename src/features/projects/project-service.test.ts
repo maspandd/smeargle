@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { resetDatabase } from "../../../tests/helpers/database";
 import { createProjectInput } from "./project-schema";
-import { createProject } from "./project-service";
+import { createProject, listProjectsForUser } from "./project-service";
 
 afterEach(resetDatabase);
 
@@ -115,5 +115,38 @@ describe("project creation", () => {
     await expect(prisma.project.count()).resolves.toBe(0);
     await expect(prisma.projectMembership.count()).resolves.toBe(0);
     await expect(prisma.auditEvent.count()).resolves.toBe(0);
+  });
+});
+
+describe("project dashboard", () => {
+  it("lists only projects accessible to the user with role and version", async () => {
+    const owner = await prisma.user.create({
+      data: { email: "owner@example.test", passwordHash: "hash" },
+    });
+    const otherOwner = await prisma.user.create({
+      data: { email: "other@example.test", passwordHash: "hash" },
+    });
+    const accessible = await createProject({
+      actorId: owner.id,
+      name: "Products API",
+      baseEndpoint: "/api/products",
+    });
+    await createProject({
+      actorId: otherOwner.id,
+      name: "Orders API",
+      baseEndpoint: "/api/orders",
+    });
+
+    const projects = await listProjectsForUser(owner.id);
+
+    expect(projects).toEqual([
+      expect.objectContaining({
+        id: accessible.id,
+        name: "Products API",
+        baseEndpoint: "/api/products",
+        role: "OWNER",
+        currentVersion: "v1.0",
+      }),
+    ]);
   });
 });

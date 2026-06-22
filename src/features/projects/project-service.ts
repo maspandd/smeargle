@@ -36,3 +36,28 @@ export async function createProject(request: CreateProjectRequest) {
     currentVersion: `v${project.currentMajor}.${project.currentMinor}`,
   };
 }
+
+export async function listProjectsForUser(userId: string) {
+  const memberships = await prisma.projectMembership.findMany({
+    where: { userId },
+    orderBy: { project: { createdAt: "desc" } },
+    select: {
+      role: true,
+      project: {
+        select: {
+          id: true,
+          name: true,
+          baseEndpoint: true,
+          currentMajor: true,
+          currentMinor: true,
+        },
+      },
+    },
+  });
+
+  return memberships.map(({ project, role }) => ({
+    ...project,
+    role,
+    currentVersion: `v${project.currentMajor}.${project.currentMinor}`,
+  }));
+}
