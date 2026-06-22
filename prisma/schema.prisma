@@ -25,6 +25,9 @@ enum ProjectRole {
 
 enum AuditAction {
   PROJECT_CREATED
+  MEMBER_ADDED
+  MEMBER_ROLE_CHANGED
+  MEMBER_REMOVED
 }
 
 model User {

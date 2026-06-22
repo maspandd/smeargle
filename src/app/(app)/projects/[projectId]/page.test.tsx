@@ -10,6 +10,7 @@ describe("project workspace", () => {
         currentVersion="v1.0"
         memberCount={1}
         name="Products API"
+        projectId="project-1"
         role="OWNER"
       />,
     );
@@ -18,5 +19,9 @@ describe("project workspace", () => {
     expect(screen.getByText("/api/products")).toBeVisible();
     expect(screen.getByText("v1.0")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add Field" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute(
+      "href",
+      "/projects/project-1/members",
+    );
   });
 });

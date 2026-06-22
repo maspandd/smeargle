@@ -3,6 +3,7 @@ import { requireUser } from "@/features/auth/auth-service";
 import { requireProjectCapability } from "@/features/projects/authorization";
 import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 type ProjectWorkspaceProps = {
@@ -10,6 +11,7 @@ type ProjectWorkspaceProps = {
   baseEndpoint: string;
   currentVersion: string;
   memberCount: number;
+  projectId: string;
   role: ProjectRole | "ADMIN";
 };
 
@@ -18,6 +20,7 @@ export function ProjectWorkspace({
   baseEndpoint,
   currentVersion,
   memberCount,
+  projectId,
   role,
 }: ProjectWorkspaceProps) {
   const readOnly = role === "VIEWER";
@@ -39,6 +42,11 @@ export function ProjectWorkspace({
             <span>Indonesian locale</span>
             <span>{memberCount} member{memberCount === 1 ? "" : "s"}</span>
             <span>{role === "ADMIN" ? "Administrator" : role.toLowerCase()}</span>
+            {role === "OWNER" || role === "ADMIN" ? (
+              <Link className="font-medium text-blue-700" href={`/projects/${projectId}/members`}>
+                Members
+              </Link>
+            ) : null}
           </div>
         </div>
       </header>
@@ -113,6 +121,7 @@ export default async function ProjectPage({
       currentVersion={`v${project.currentMajor}.${project.currentMinor}`}
       memberCount={project._count.memberships}
       name={project.name}
+      projectId={projectId}
       role={user.systemRole === "ADMIN" ? "ADMIN" : project.memberships[0].role}
     />
   );
