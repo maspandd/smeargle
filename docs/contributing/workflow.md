@@ -93,6 +93,7 @@ Use these locations:
 
 - `README.md` for high-level setup and project entry points.
 - `docs/contributing/` for team workflow, collaboration, and onboarding.
+- `docs/design/` for Figma-derived design references, screenshots, and phase mapping.
 - `docs/superpowers/specs/` for approved product and technical specifications.
 - `docs/superpowers/plans/` for implementation plans and phase breakdowns.
 

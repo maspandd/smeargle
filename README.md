@@ -22,6 +22,11 @@ Read the contribution workflow before opening or merging pull requests:
 
 - [Contribution Workflow](docs/contributing/workflow.md)
 
+Design references:
+
+- [Figma Design Reference](docs/design/figma-design.md)
+- [Figma Phase And Task Map](docs/design/figma-phase-map.md)
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
