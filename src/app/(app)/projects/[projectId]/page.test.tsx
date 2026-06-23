@@ -7,7 +7,9 @@ describe("project workspace", () => {
     render(
       <ProjectWorkspace
         baseEndpoint="/api/products"
+        currentSnapshot={{ fields: [] }}
         currentVersion="v1.0"
+        currentVersionId="version-1"
         memberCount={1}
         name="Products API"
         projectId="project-1"
@@ -17,7 +19,7 @@ describe("project workspace", () => {
 
     expect(screen.getByRole("heading", { name: "Schema Builder" })).toBeVisible();
     expect(screen.getByText("/api/products")).toBeVisible();
-    expect(screen.getByText("v1.0")).toBeVisible();
+    expect(screen.getAllByText("v1.0")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Add Field" })).toBeVisible();
     expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute(
       "href",
