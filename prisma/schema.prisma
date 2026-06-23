@@ -28,6 +28,7 @@ enum AuditAction {
   MEMBER_ADDED
   MEMBER_ROLE_CHANGED
   MEMBER_REMOVED
+  SCHEMA_MUTATED
 }
 
 model User {
