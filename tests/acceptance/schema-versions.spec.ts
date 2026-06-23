@@ -12,6 +12,22 @@ function fixture(action: string, input = {}) {
   return output ? JSON.parse(output) : undefined;
 }
 
+async function addField(
+  page: import("@playwright/test").Page,
+  input: { name: string; type?: "number" },
+) {
+  await page.getByRole("button", { name: "Add Field" }).click();
+  await page.getByLabel("Field name").fill(input.name);
+
+  if (input.type === "number") {
+    await page.getByLabel("Field type").selectOption("number");
+  }
+
+  await page.getByRole("button", { name: "Save Field" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.getByText(input.name, { exact: true })).toBeVisible();
+}
+
 test.describe("Phase 2 schema versions", () => {
   test.beforeEach(async ({ page }) => {
     fixture("reset");
@@ -28,14 +44,8 @@ test.describe("Phase 2 schema versions", () => {
   });
 
   test("shows version history and compares the latest two schema versions", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Field" }).click();
-    await page.getByLabel("Field name").fill("product_name");
-    await page.getByRole("button", { name: "Save Field" }).click();
-
-    await page.getByRole("button", { name: "Add Field" }).click();
-    await page.getByLabel("Field name").fill("price");
-    await page.getByLabel("Field type").selectOption("number");
-    await page.getByRole("button", { name: "Save Field" }).click();
+    await addField(page, { name: "product_name" });
+    await addField(page, { name: "price", type: "number" });
 
     const projectUrl = page.url();
     await page.goto(`${projectUrl}/versions`);
@@ -53,14 +63,8 @@ test.describe("Phase 2 schema versions", () => {
   test("downloads a schema snapshot and restores an earlier version as a new current version", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "Add Field" }).click();
-    await page.getByLabel("Field name").fill("product_name");
-    await page.getByRole("button", { name: "Save Field" }).click();
-
-    await page.getByRole("button", { name: "Add Field" }).click();
-    await page.getByLabel("Field name").fill("price");
-    await page.getByLabel("Field type").selectOption("number");
-    await page.getByRole("button", { name: "Save Field" }).click();
+    await addField(page, { name: "product_name" });
+    await addField(page, { name: "price", type: "number" });
 
     const projectUrl = page.url();
     await page.goto(`${projectUrl}/versions`);
@@ -81,14 +85,8 @@ test.describe("Phase 2 schema versions", () => {
   });
 
   test("cancels rollback without creating a new version", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Field" }).click();
-    await page.getByLabel("Field name").fill("product_name");
-    await page.getByRole("button", { name: "Save Field" }).click();
-
-    await page.getByRole("button", { name: "Add Field" }).click();
-    await page.getByLabel("Field name").fill("price");
-    await page.getByLabel("Field type").selectOption("number");
-    await page.getByRole("button", { name: "Save Field" }).click();
+    await addField(page, { name: "product_name" });
+    await addField(page, { name: "price", type: "number" });
 
     const projectUrl = page.url();
     await page.goto(`${projectUrl}/versions`);
