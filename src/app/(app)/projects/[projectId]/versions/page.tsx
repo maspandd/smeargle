@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { rollbackVersionAction } from "./actions";
 
 export default async function ProjectVersionsPage({
   params,
@@ -38,6 +39,11 @@ export default async function ProjectVersionsPage({
     select: {
       name: true,
       baseEndpoint: true,
+      memberships: {
+        where: { userId: user.id },
+        select: { role: true },
+        take: 1,
+      },
     },
   });
   if (!project) notFound();
@@ -69,7 +75,14 @@ export default async function ProjectVersionsPage({
       </header>
 
       <section className="mx-auto grid max-w-6xl gap-6 px-6 py-10 lg:grid-cols-[22rem_minmax(0,1fr)]">
-        <VersionHistory versions={versions} />
+        <VersionHistory
+          canRollback={
+            user.systemRole === "ADMIN" || project.memberships[0]?.role !== "VIEWER"
+          }
+          onRollback={rollbackVersionAction}
+          projectId={projectId}
+          versions={versions}
+        />
         {latest && previous ? (
           <VersionComparison
             afterVersionLabel={latest.versionLabel}

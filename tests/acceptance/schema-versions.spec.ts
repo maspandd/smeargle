@@ -49,4 +49,55 @@ test.describe("Phase 2 schema versions", () => {
     await expect(page.getByText("Added", { exact: true })).toBeVisible();
     await expect(page.getByText("price", { exact: true })).toBeVisible();
   });
+
+  test("downloads a schema snapshot and restores an earlier version as a new current version", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Add Field" }).click();
+    await page.getByLabel("Field name").fill("product_name");
+    await page.getByRole("button", { name: "Save Field" }).click();
+
+    await page.getByRole("button", { name: "Add Field" }).click();
+    await page.getByLabel("Field name").fill("price");
+    await page.getByLabel("Field type").selectOption("number");
+    await page.getByRole("button", { name: "Save Field" }).click();
+
+    const projectUrl = page.url();
+    await page.goto(`${projectUrl}/versions`);
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Download v1.2 JSON" }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("products-api-schema-v1.2.json");
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Restore v1.1" }).click();
+
+    const history = page.getByRole("list", { name: "Schema version history" });
+    await expect(history.getByRole("heading", { name: "v1.3" })).toBeVisible();
+    await expect(history.getByRole("heading", { name: "v1.2" })).toBeVisible();
+    await expect(page.getByText("Restored schema from v1.1")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Comparing v1.3 to v1.2" })).toBeVisible();
+  });
+
+  test("cancels rollback without creating a new version", async ({ page }) => {
+    await page.getByRole("button", { name: "Add Field" }).click();
+    await page.getByLabel("Field name").fill("product_name");
+    await page.getByRole("button", { name: "Save Field" }).click();
+
+    await page.getByRole("button", { name: "Add Field" }).click();
+    await page.getByLabel("Field name").fill("price");
+    await page.getByLabel("Field type").selectOption("number");
+    await page.getByRole("button", { name: "Save Field" }).click();
+
+    const projectUrl = page.url();
+    await page.goto(`${projectUrl}/versions`);
+
+    page.once("dialog", (dialog) => dialog.dismiss());
+    await page.getByRole("button", { name: "Restore v1.1" }).click();
+
+    const history = page.getByRole("list", { name: "Schema version history" });
+    await expect(history.getByRole("heading", { name: "v1.2" })).toBeVisible();
+    await expect(history.getByRole("heading", { name: "v1.3" })).toHaveCount(0);
+  });
 });
