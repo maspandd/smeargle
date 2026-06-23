@@ -11,11 +11,22 @@ import {
   claimGenerationJob,
   claimNextGenerationJob,
 } from "./job-repository";
+import {
+  enrichGeneratedRecords,
+  type EnrichmentSummary,
+} from "./enrichment-service";
+import type { LlmProvider } from "./llm-provider";
 
 type RecordGenerator = (input: GenerateRecordInput) => GeneratedRecord;
 
 type RunGenerationJobOptions = {
   generateRecord?: RecordGenerator;
+  llmProvider?: LlmProvider;
+  enrichment?: {
+    batchSize?: number;
+    timeoutMs?: number;
+    maxRetries?: number;
+  };
 };
 
 type RunGenerationJobResult =
@@ -45,7 +56,11 @@ export async function runGenerationJob(
     return { ok: false, code: "JOB_NOT_PENDING" };
   }
 
-  return executeClaimedJob(job, options.generateRecord ?? generateRecord);
+  return executeClaimedJob(job, {
+    generator: options.generateRecord ?? generateRecord,
+    llmProvider: options.llmProvider,
+    enrichment: options.enrichment,
+  });
 }
 
 export async function runNextGenerationJob(
@@ -57,22 +72,27 @@ export async function runNextGenerationJob(
     return { ok: false, code: "NO_PENDING_JOB" };
   }
 
-  return executeClaimedJob(job, options.generateRecord ?? generateRecord);
+  return executeClaimedJob(job, {
+    generator: options.generateRecord ?? generateRecord,
+    llmProvider: options.llmProvider,
+    enrichment: options.enrichment,
+  });
 }
 
 async function executeClaimedJob(
   job: ClaimedGenerationJob,
-  generator: RecordGenerator,
+  options: {
+    generator: RecordGenerator;
+    llmProvider?: LlmProvider;
+    enrichment?: RunGenerationJobOptions["enrichment"];
+  },
 ): Promise<RunGenerationJobResult> {
   try {
-    if (job.mode !== "FAKER_ONLY") {
-      throw new Error("Hybrid LLM generation is not implemented yet");
-    }
-
     await prisma.generatedRecordStage.deleteMany({ where: { jobId: job.id } });
+    const generatedRecords: GeneratedRecord[] = [];
 
     for (let ordinal = 0; ordinal < job.count; ordinal += 1) {
-      const record = generator({
+      const record = options.generator({
         schema: job.schema,
         seed: job.seed,
         ordinal,
@@ -83,6 +103,22 @@ async function executeClaimedJob(
       if (!validation.ok) {
         throw new Error(`Generated record is invalid: ${validation.errors.join("; ")}`);
       }
+
+      generatedRecords.push(record);
+
+      if ((ordinal + 1) % 100 === 0) {
+        await heartbeat(job.id);
+      }
+    }
+
+    const { records, warningSummary } = await enrichHybridRecords(
+      job,
+      generatedRecords,
+      options,
+    );
+
+    for (let ordinal = 0; ordinal < records.length; ordinal += 1) {
+      const record = records[ordinal];
 
       await prisma.generatedRecordStage.create({
         data: {
@@ -99,7 +135,7 @@ async function executeClaimedJob(
       }
     }
 
-    return promoteGeneratedRecords(job);
+    return promoteGeneratedRecords(job, warningSummary);
   } catch {
     await failJob(job.id);
 
@@ -111,8 +147,41 @@ async function executeClaimedJob(
   }
 }
 
+async function enrichHybridRecords(
+  job: ClaimedGenerationJob,
+  records: GeneratedRecord[],
+  options: {
+    llmProvider?: LlmProvider;
+    enrichment?: RunGenerationJobOptions["enrichment"];
+  },
+): Promise<{
+  records: GeneratedRecord[];
+  warningSummary?: EnrichmentSummary;
+}> {
+  if (job.mode === "FAKER_ONLY") {
+    return { records };
+  }
+
+  if (!options.llmProvider) {
+    throw new Error("Hybrid generation requires an LLM provider");
+  }
+
+  const enriched = await enrichGeneratedRecords({
+    schema: job.schema,
+    records,
+    provider: options.llmProvider,
+    ...options.enrichment,
+  });
+
+  return {
+    records: enriched.records,
+    warningSummary: enriched.summary,
+  };
+}
+
 async function promoteGeneratedRecords(
   job: ClaimedGenerationJob,
+  warningSummary?: EnrichmentSummary,
 ): Promise<Extract<RunGenerationJobResult, { ok: true }>> {
   return prisma.$transaction(async (transaction) => {
     const stagedRecords = await transaction.generatedRecordStage.findMany({
@@ -147,7 +216,10 @@ async function promoteGeneratedRecords(
     });
     await transaction.generationJob.update({
       where: { id: job.id },
-      data: { status: "COMPLETED" },
+      data: {
+        status: "COMPLETED",
+        warningSummary: warningSummary as Prisma.InputJsonValue | undefined,
+      },
     });
     await transaction.auditEvent.create({
       data: {
@@ -159,6 +231,7 @@ async function promoteGeneratedRecords(
           recordCount: stagedRecords.length,
           seed: job.seed,
           mode: job.mode,
+          ...(warningSummary ? { warningSummary } : {}),
         },
       },
     });

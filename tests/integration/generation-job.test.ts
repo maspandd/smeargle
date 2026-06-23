@@ -4,9 +4,11 @@ import { createProject } from "@/features/projects/project-service";
 import { mutateSchema } from "@/features/schema/schema-service";
 import { validateRecordValue } from "@/features/schema/value-validator";
 import { createGenerationJob } from "@/features/generation/generation-service";
+import { FakeLlmProvider } from "@/features/generation/fake-llm-provider";
 import { generateRecord } from "@/features/generation/record-generator";
 import { claimNextGenerationJob } from "@/features/generation/job-repository";
 import { runGenerationJob } from "@/features/generation/job-runner";
+import { LlmProviderError } from "@/features/generation/llm-provider";
 import { resetDatabase } from "../helpers/database";
 
 afterEach(resetDatabase);
@@ -57,6 +59,31 @@ async function createProjectWithSchema() {
   }
 
   return { owner, project, schemaVersion: result.version };
+}
+
+async function createProjectWithSemanticSchema() {
+  const fixture = await createProjectWithSchema();
+  const result = await mutateSchema({
+    actorId: fixture.owner.id,
+    projectId: fixture.project.id,
+    expectedVersionId: fixture.schemaVersion.id,
+    mutation: {
+      type: "addField",
+      parentFieldPath: [],
+      field: {
+        id: "fld_customer_email",
+        name: "customer_email",
+        type: "email",
+        required: true,
+      },
+    },
+  });
+
+  if (!result.ok) {
+    throw new Error("Expected semantic schema mutation to succeed");
+  }
+
+  return { ...fixture, schemaVersion: result.version };
 }
 
 async function createPendingGenerationJob(input?: {
@@ -267,5 +294,73 @@ describe("generation jobs", () => {
         value: { product_name: "Still current" },
       }),
     ]);
+  });
+
+  it("completes a hybrid job with faker fallback and stores its warning summary", async () => {
+    const { owner, project } = await createProjectWithSemanticSchema();
+    const created = await createGenerationJob({
+      actorId: owner.id,
+      projectId: project.id,
+      count: 2,
+      seed: "hybrid-fallback-seed",
+      nullRate: 0,
+      mode: "HYBRID_LLM",
+    });
+    const provider = new FakeLlmProvider(async () => {
+      throw new LlmProviderError("Provider quota exceeded", {
+        code: "QUOTA_EXCEEDED",
+        transient: false,
+      });
+    });
+
+    if (!created.ok) {
+      throw new Error(`Expected job creation to succeed, got ${created.code}`);
+    }
+
+    await expect(
+      runGenerationJob(created.jobId, { llmProvider: provider }),
+    ).resolves.toEqual({
+      ok: true,
+      jobId: created.jobId,
+      status: "COMPLETED",
+      promotedRecordCount: 2,
+    });
+
+    const records = await prisma.mockRecord.findMany({
+      where: { projectId: project.id },
+      orderBy: { ordinal: "asc" },
+      select: { value: true },
+    });
+    const job = await prisma.generationJob.findUniqueOrThrow({
+      where: { id: created.jobId },
+      select: { status: true, warningSummary: true },
+    });
+
+    expect(provider.requests).toHaveLength(1);
+    expect(records).toEqual([
+      {
+        value: expect.objectContaining({
+          customer_email: expect.stringMatching(
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+          ),
+        }),
+      },
+      {
+        value: expect.objectContaining({
+          customer_email: expect.stringMatching(
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+          ),
+        }),
+      },
+    ]);
+    expect(job).toEqual({
+      status: "COMPLETED",
+      warningSummary: {
+        requested: 2,
+        enriched: 0,
+        fallback: 2,
+        failedBatches: 1,
+      },
+    });
   });
 });

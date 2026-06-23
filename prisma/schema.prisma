@@ -161,6 +161,7 @@ model GenerationJob {
   nullRate        Float
   mode            GenerationMode
   status          GenerationStatus       @default(PENDING)
+  warningSummary  Json?
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   project         Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
