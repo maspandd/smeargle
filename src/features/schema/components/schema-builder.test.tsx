@@ -44,7 +44,7 @@ describe("schema builder", () => {
     await user.type(screen.getByLabelText("Minimum length"), "3");
     await user.click(screen.getByRole("button", { name: "Save Field" }));
 
-    expect(onAddField).toHaveBeenCalledWith("project-1", "version-1", {
+    expect(onAddField).toHaveBeenCalledWith("project-1", "version-1", [], {
       name: "product_name",
       required: true,
       type: "string",

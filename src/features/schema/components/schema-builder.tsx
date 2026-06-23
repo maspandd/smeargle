@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { SchemaSnapshot } from "../schema-types";
-import { FieldDialog, type FieldDialogInput } from "./field-dialog";
-import { FieldRow } from "./field-row";
+import type { FieldDialogInput } from "./field-dialog";
+import { NestedFieldsEditor } from "./nested-fields-editor";
 
 export type AddFieldActionResult =
   | {
@@ -23,6 +23,7 @@ type SchemaBuilderProps = {
   onAddField: (
     projectId: string,
     expectedVersionId: string,
+    parentFieldPath: string[],
     input: FieldDialogInput,
   ) => Promise<AddFieldActionResult>;
 };
@@ -35,15 +36,14 @@ export function SchemaBuilder({
   initialSnapshot,
   onAddField,
 }: SchemaBuilderProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [versionId, setVersionId] = useState(initialVersionId);
   const [versionLabel, setVersionLabel] = useState(initialVersionLabel);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleAddField(input: FieldDialogInput) {
+  async function handleAddField(parentFieldPath: string[], input: FieldDialogInput) {
     setError(null);
-    const result = await onAddField(projectId, versionId, input);
+    const result = await onAddField(projectId, versionId, parentFieldPath, input);
 
     if (!result.ok) {
       setError("This schema was updated elsewhere. Refresh and try again.");
@@ -73,15 +73,6 @@ export function SchemaBuilder({
           >
             Generate Mock Data
           </button>
-          <button
-            className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:bg-zinc-300"
-            disabled={readOnly}
-            onClick={() => setDialogOpen(true)}
-            title={readOnly ? "Viewers cannot edit the schema" : undefined}
-            type="button"
-          >
-            Add Field
-          </button>
         </div>
       </div>
 
@@ -91,28 +82,15 @@ export function SchemaBuilder({
         </p>
       ) : null}
 
-      {snapshot.fields.length === 0 ? (
-        <div className="mt-8 border-y border-dashed border-zinc-300 py-16 text-center text-zinc-500">
-          No fields yet. Add a field to begin the v1.0 schema.
-        </div>
-      ) : (
-        <div className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <div className="grid grid-cols-[minmax(0,1fr)_9rem_7rem] gap-4 border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            <span>Name</span>
-            <span>Type</span>
-            <span className="text-right">Badges</span>
-          </div>
-          {snapshot.fields.map((field) => (
-            <FieldRow field={field} key={field.id} />
-          ))}
-        </div>
-      )}
-
-      <FieldDialog
-        onClose={() => setDialogOpen(false)}
-        onSubmit={handleAddField}
-        open={dialogOpen}
-      />
+      <div className="mt-8">
+        <NestedFieldsEditor
+          depth={1}
+          fields={snapshot.fields}
+          onAddField={handleAddField}
+          parentFieldPath={[]}
+          readOnly={readOnly}
+        />
+      </div>
     </div>
   );
 }

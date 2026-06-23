@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { addRootFieldAction } from "./schema/actions";
+import { addFieldAction } from "./schema/actions";
 
 type ProjectWorkspaceProps = {
   name: string;
@@ -63,7 +63,7 @@ export function ProjectWorkspace({
           initialSnapshot={currentSnapshot}
           initialVersionId={currentVersionId}
           initialVersionLabel={currentVersion}
-          onAddField={addRootFieldAction}
+          onAddField={addFieldAction}
           projectId={projectId}
           readOnly={readOnly}
         />
