@@ -2,6 +2,12 @@
 
 import { FormEvent, useState } from "react";
 
+export type FieldDialogItemInput =
+  | { type: "string"; minLength?: number; maxLength?: number }
+  | { type: "number"; min?: number; max?: number; precision?: number }
+  | { type: "date"; minDate?: string; maxDate?: string }
+  | { type: "email" };
+
 export type FieldDialogInput =
   | {
       name: string;
@@ -29,26 +35,62 @@ export type FieldDialogInput =
       name: string;
       type: "email";
       required: boolean;
+    }
+  | {
+      name: string;
+      type: "object";
+      required: boolean;
+    }
+  | {
+      name: string;
+      type: "array";
+      required: boolean;
+      minItems?: number;
+      maxItems?: number;
+      item: FieldDialogItemInput;
     };
+
+type ScalarType = FieldDialogItemInput["type"];
+type FieldDialogType = FieldDialogInput["type"];
+
+// Root fields live at `depth`. Array items live one level deeper, so arrays may
+// only be added while their item would stay within the five-level limit.
+const MAX_DEPTH = 5;
 
 type FieldDialogProps = {
   open: boolean;
+  depth?: number;
   onClose: () => void;
   onSubmit: (input: FieldDialogInput) => Promise<void>;
 };
 
-const scalarTypes = [
+const fieldTypes = [
   { value: "string", label: "String" },
   { value: "number", label: "Number" },
   { value: "date", label: "Date" },
   { value: "email", label: "Email" },
-] satisfies { value: FieldDialogInput["type"]; label: string }[];
+  { value: "object", label: "Object" },
+  { value: "array", label: "Array" },
+] satisfies { value: FieldDialogType; label: string }[];
 
-export function FieldDialog({ open, onClose, onSubmit }: FieldDialogProps) {
-  const [fieldType, setFieldType] = useState<FieldDialogInput["type"]>("string");
+const itemTypes = [
+  { value: "string", label: "String" },
+  { value: "number", label: "Number" },
+  { value: "date", label: "Date" },
+  { value: "email", label: "Email" },
+] satisfies { value: ScalarType; label: string }[];
+
+export function FieldDialog({ open, depth = 1, onClose, onSubmit }: FieldDialogProps) {
+  const [fieldType, setFieldType] = useState<FieldDialogType>("string");
+  const [itemType, setItemType] = useState<ScalarType>("string");
   const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
+
+  const availableTypes =
+    depth >= MAX_DEPTH
+      ? fieldTypes.filter((type) => type.value !== "array")
+      : fieldTypes;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,7 +102,7 @@ export function FieldDialog({ open, onClose, onSubmit }: FieldDialogProps) {
     };
 
     try {
-      await onSubmit(toFieldInput(fieldType, base, formData));
+      await onSubmit(toFieldInput(fieldType, itemType, base, formData));
       onClose();
     } finally {
       setSubmitting(false);
@@ -78,7 +120,7 @@ export function FieldDialog({ open, onClose, onSubmit }: FieldDialogProps) {
           <div>
             <h2 className="text-xl font-semibold">Add field</h2>
             <p className="mt-1 text-sm text-zinc-500">
-              Create a scalar field for this schema.
+              Create a field for this schema.
             </p>
           </div>
           <button
@@ -113,11 +155,11 @@ export function FieldDialog({ open, onClose, onSubmit }: FieldDialogProps) {
               id="field-type"
               name="type"
               onChange={(event) =>
-                setFieldType(event.target.value as FieldDialogInput["type"])
+                setFieldType(event.target.value as FieldDialogType)
               }
               value={fieldType}
             >
-              {scalarTypes.map((type) => (
+              {availableTypes.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
@@ -133,6 +175,14 @@ export function FieldDialog({ open, onClose, onSubmit }: FieldDialogProps) {
           {fieldType === "string" ? <StringConstraints /> : null}
           {fieldType === "number" ? <NumberConstraints /> : null}
           {fieldType === "date" ? <DateConstraints /> : null}
+          {fieldType === "object" ? (
+            <p className="text-sm text-zinc-500">
+              Add nested fields after creating the object.
+            </p>
+          ) : null}
+          {fieldType === "array" ? (
+            <ArrayConstraints itemType={itemType} onItemTypeChange={setItemType} />
+          ) : null}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
@@ -156,30 +206,68 @@ export function FieldDialog({ open, onClose, onSubmit }: FieldDialogProps) {
   );
 }
 
-function StringConstraints() {
+function StringConstraints({ prefix = "" }: { prefix?: string }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <NumberInput label="Minimum length" name="minLength" />
-      <NumberInput label="Maximum length" name="maxLength" />
+      <NumberInput label={withPrefix(prefix, "minimum length")} name={`${prefix}minLength`} />
+      <NumberInput label={withPrefix(prefix, "maximum length")} name={`${prefix}maxLength`} />
     </div>
   );
 }
 
-function NumberConstraints() {
+function NumberConstraints({ prefix = "" }: { prefix?: string }) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <NumberInput label="Minimum value" name="min" />
-      <NumberInput label="Maximum value" name="max" />
-      <NumberInput label="Decimal precision" name="precision" />
+      <NumberInput label={withPrefix(prefix, "minimum value")} name={`${prefix}min`} />
+      <NumberInput label={withPrefix(prefix, "maximum value")} name={`${prefix}max`} />
+      <NumberInput label={withPrefix(prefix, "decimal precision")} name={`${prefix}precision`} />
     </div>
   );
 }
 
-function DateConstraints() {
+function DateConstraints({ prefix = "" }: { prefix?: string }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <TextInput label="Earliest date" name="minDate" type="date" />
-      <TextInput label="Latest date" name="maxDate" type="date" />
+      <TextInput label={withPrefix(prefix, "earliest date")} name={`${prefix}minDate`} type="date" />
+      <TextInput label={withPrefix(prefix, "latest date")} name={`${prefix}maxDate`} type="date" />
+    </div>
+  );
+}
+
+function ArrayConstraints({
+  itemType,
+  onItemTypeChange,
+}: {
+  itemType: ScalarType;
+  onItemTypeChange: (type: ScalarType) => void;
+}) {
+  return (
+    <div className="space-y-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumberInput label="Minimum items" name="minItems" />
+        <NumberInput label="Maximum items" name="maxItems" />
+      </div>
+      <div>
+        <label className="text-sm font-medium" htmlFor="item-type">
+          Item type
+        </label>
+        <select
+          className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
+          id="item-type"
+          name="itemType"
+          onChange={(event) => onItemTypeChange(event.target.value as ScalarType)}
+          value={itemType}
+        >
+          {itemTypes.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {itemType === "string" ? <StringConstraints prefix="item" /> : null}
+      {itemType === "number" ? <NumberConstraints prefix="item" /> : null}
+      {itemType === "date" ? <DateConstraints prefix="item" /> : null}
     </div>
   );
 }
@@ -213,8 +301,14 @@ function TextInput({
   );
 }
 
+function withPrefix(prefix: string, label: string) {
+  const text = prefix ? `${prefix} ${label}` : label;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function toFieldInput(
-  type: FieldDialogInput["type"],
+  type: FieldDialogType,
+  itemType: ScalarType,
   base: { name: string; required: boolean },
   formData: FormData,
 ): FieldDialogInput {
@@ -243,15 +337,51 @@ function toFieldInput(
       };
     case "email":
       return { ...base, type };
+    case "object":
+      return { ...base, type };
+    case "array":
+      return {
+        ...base,
+        type,
+        ...optionalNumber("minItems", formData),
+        ...optionalNumber("maxItems", formData),
+        item: toItemInput(itemType, formData),
+      };
+  }
+}
+
+function toItemInput(type: ScalarType, formData: FormData): FieldDialogItemInput {
+  switch (type) {
+    case "string":
+      return {
+        type,
+        ...optionalNumber("itemminLength", formData),
+        ...optionalNumber("itemmaxLength", formData),
+      };
+    case "number":
+      return {
+        type,
+        ...optionalNumber("itemmin", formData),
+        ...optionalNumber("itemmax", formData),
+        ...optionalNumber("itemprecision", formData),
+      };
+    case "date":
+      return {
+        type,
+        ...optionalString("itemminDate", formData),
+        ...optionalString("itemmaxDate", formData),
+      };
+    case "email":
+      return { type };
   }
 }
 
 function optionalNumber(name: string, formData: FormData) {
   const value = String(formData.get(name) ?? "").trim();
-  return value === "" ? {} : { [name]: Number(value) };
+  return value === "" ? {} : { [name.replace(/^item/, "")]: Number(value) };
 }
 
 function optionalString(name: string, formData: FormData) {
   const value = String(formData.get(name) ?? "").trim();
-  return value === "" ? {} : { [name]: value };
+  return value === "" ? {} : { [name.replace(/^item/, "")]: value };
 }
