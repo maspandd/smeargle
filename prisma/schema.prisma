@@ -37,6 +37,23 @@ enum ProjectDataStatus {
   INCOMPATIBLE
 }
 
+enum GenerationStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum GenerationMode {
+  FAKER_ONLY
+  HYBRID_LLM
+}
+
+enum RecordSource {
+  GENERATED
+}
+
 model User {
   id             String              @id @default(cuid())
   email          String              @unique
@@ -78,6 +95,8 @@ model Project {
   auditEvents            AuditEvent[]
   schemaVersions         SchemaVersion[]     @relation("ProjectSchemaVersions")
   currentSchemaVersion   SchemaVersion?      @relation("CurrentSchemaVersion", fields: [currentSchemaVersionId], references: [id], onDelete: SetNull)
+  generationJobs         GenerationJob[]
+  mockRecords            MockRecord[]
 }
 
 model SchemaVersion {
@@ -96,6 +115,9 @@ model SchemaVersion {
   actor             User?           @relation(fields: [actorId], references: [id], onDelete: SetNull)
   restoredFrom      SchemaVersion?  @relation("SchemaVersionRestore", fields: [restoredFromId], references: [id], onDelete: SetNull)
   restoredVersions  SchemaVersion[] @relation("SchemaVersionRestore")
+  generationJobs    GenerationJob[]
+  stagedRecords     GeneratedRecordStage[]
+  mockRecords       MockRecord[]
 
   @@unique([projectId, major, minor])
   @@index([projectId])
@@ -127,4 +149,57 @@ model AuditEvent {
 
   @@index([actorId])
   @@index([projectId])
+}
+
+model GenerationJob {
+  id              String                 @id @default(cuid())
+  projectId       String
+  schemaVersionId String
+  count           Int
+  seed            String
+  nullRate        Float
+  mode            GenerationMode
+  status          GenerationStatus       @default(PENDING)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  project         Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schemaVersion   SchemaVersion          @relation(fields: [schemaVersionId], references: [id], onDelete: Restrict)
+  stagedRecords   GeneratedRecordStage[]
+  mockRecords     MockRecord[]
+
+  @@index([projectId, id])
+  @@index([schemaVersionId])
+}
+
+model GeneratedRecordStage {
+  id              String        @id @default(cuid())
+  jobId           String
+  schemaVersionId String
+  ordinal         Int
+  value           Json
+  createdAt       DateTime      @default(now())
+  job             GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  schemaVersion   SchemaVersion @relation(fields: [schemaVersionId], references: [id], onDelete: Restrict)
+
+  @@index([jobId, ordinal])
+  @@index([schemaVersionId])
+}
+
+model MockRecord {
+  id              String         @id @default(cuid())
+  projectId       String
+  schemaVersionId String
+  generationJobId String?
+  ordinal         Int
+  source          RecordSource
+  value           Json
+  createdAt       DateTime       @default(now())
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  schemaVersion   SchemaVersion  @relation(fields: [schemaVersionId], references: [id], onDelete: Restrict)
+  generationJob   GenerationJob? @relation(fields: [generationJobId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, id])
+  @@index([projectId, ordinal])
+  @@index([schemaVersionId])
+  @@index([generationJobId])
 }
