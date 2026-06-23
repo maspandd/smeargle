@@ -84,6 +84,7 @@ export function FieldDialog({ open, depth = 1, onClose, onSubmit }: FieldDialogP
   const [fieldType, setFieldType] = useState<FieldDialogType>("string");
   const [itemType, setItemType] = useState<ScalarType>("string");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!open) return null;
 
@@ -95,6 +96,7 @@ export function FieldDialog({ open, depth = 1, onClose, onSubmit }: FieldDialogP
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
+    setSubmitError(null);
     const formData = new FormData(event.currentTarget);
     const base = {
       name: String(formData.get("name") ?? "").trim(),
@@ -104,6 +106,8 @@ export function FieldDialog({ open, depth = 1, onClose, onSubmit }: FieldDialogP
     try {
       await onSubmit(toFieldInput(fieldType, itemType, base, formData));
       onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to save field");
     } finally {
       setSubmitting(false);
     }
@@ -134,6 +138,11 @@ export function FieldDialog({ open, depth = 1, onClose, onSubmit }: FieldDialogP
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          {submitError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {submitError}
+            </p>
+          ) : null}
           <div>
             <label className="text-sm font-medium" htmlFor="field-name">
               Field name
@@ -295,6 +304,7 @@ function TextInput({
         className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2"
         id={id}
         name={name}
+        step={type === "number" ? "any" : undefined}
         type={type}
       />
     </div>
