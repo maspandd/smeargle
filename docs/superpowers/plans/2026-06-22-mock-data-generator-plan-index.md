@@ -7,6 +7,7 @@ Implement the platform in order. Each phase ends in deployable, testable softwar
 
 1. `2026-06-22-phase-1-foundation-collaboration.md`
 2. `2026-06-22-phase-2-schema-versioning.md`
+   - Low-usage execution guide: `2026-06-23-phase-2-schema-versioning-micro-plan.md`
 3. `2026-06-22-phase-3-data-generation.md`
 4. `2026-06-22-phase-4-mock-runtime.md`
 5. `2026-06-22-phase-5-release-hardening.md`
@@ -41,4 +42,3 @@ Every behavior step follows this sequence:
 6. Commit the coherent increment.
 
 Configuration-only bootstrap steps are the approved exception; the first behavior after bootstrap must begin with a failing test.
-
