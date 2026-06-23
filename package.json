@@ -17,6 +17,7 @@
     "db:generate": "prisma generate"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.5.0",
     "@prisma/client": "^6.19.1",
     "argon2": "^0.44.0",
     "next": "16.2.9",
