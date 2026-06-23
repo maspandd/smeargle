@@ -30,7 +30,7 @@ test.describe("Phase 1 project creation", () => {
 
     await expect(page).toHaveURL(/\/projects\/[^/]+$/);
     await expect(page.getByRole("heading", { name: "Schema Builder" })).toBeVisible();
-    await expect(page.getByText("v1.0", { exact: true })).toBeVisible();
+    await expect(page.getByText("v1.0", { exact: true })).toHaveCount(2);
   });
 
   test("AC-01.02 keeps the dialog open for a blank project name", async ({ page }) => {
