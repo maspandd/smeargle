@@ -7,10 +7,10 @@
 
 | AC | Normalized behavior | Phase | Primary automated coverage |
 |---|---|---:|---|
-| AC-01.01 | Create a valid project at v1.0 and redirect to its empty schema workspace | 1 | Browser + route integration |
-| AC-01.02 | Reject a blank project name without closing the modal | 1 | Component + route integration |
-| AC-01.03 | Reject an endpoint without a leading slash | 1 | Domain + component |
-| AC-01.04 | Cancel or dismiss creation without persistence or notification | 1 | Component + browser |
+| AC-01.01 | Create a valid project at v1.0 and redirect to its empty schema workspace | 1 | `tests/acceptance/project-creation.spec.ts`, `src/features/projects/project-service.test.ts` |
+| AC-01.02 | Reject a blank project name without closing the modal | 1 | `tests/acceptance/project-creation.spec.ts`, `src/features/projects/components/create-project-dialog.test.tsx` |
+| AC-01.03 | Reject an endpoint without a leading slash | 1 | `tests/acceptance/project-creation.spec.ts`, `src/features/projects/project-service.test.ts` |
+| AC-01.04 | Cancel or dismiss creation without persistence or notification | 1 | `tests/acceptance/project-creation.spec.ts`, `src/features/projects/components/create-project-dialog.test.tsx` |
 | AC-02.01 | Add a constrained String field | 2 | Domain + browser |
 | AC-02.02 | Add an Email semantic field with its badge | 2 | Component + browser |
 | AC-02.03 | Reject a duplicate sibling field name | 2 | Domain + route integration |
@@ -72,3 +72,11 @@ The selected multi-user and full-CRUD scope requires criteria not present in the
 - Audit-event coverage for privileged and destructive actions.
 - Health, performance, migration, and recovery release gates.
 
+## Phase 1 Added-Criteria Evidence
+
+| Behavior | Automated coverage |
+|---|---|
+| Login success and generic rejection | `tests/acceptance/authentication.spec.ts`, `src/features/auth/auth-service.test.ts` |
+| Password hashing, session hashing, expiry, logout, and disabled accounts | `src/features/auth/auth-service.test.ts`, `src/app/(auth)/login/actions.test.ts` |
+| Owner, Editor, Viewer, and system-administrator authorization | `tests/acceptance/project-membership.spec.ts`, `src/features/projects/authorization.test.ts`, `tests/integration/project-authorization.test.ts` |
+| Add, change, remove, audit, and protect the final project Owner | `tests/acceptance/project-membership.spec.ts`, `src/features/projects/membership-service.test.ts` |

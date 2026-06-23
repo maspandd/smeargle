@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SystemRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ProjectRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum AuditAction {
+  PROJECT_CREATED
+  MEMBER_ADDED
+  MEMBER_ROLE_CHANGED
+  MEMBER_REMOVED
+}
+
+model User {
+  id           String              @id @default(cuid())
+  email        String              @unique
+  passwordHash String
+  systemRole   SystemRole          @default(USER)
+  status       UserStatus          @default(ACTIVE)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  sessions     Session[]
+  memberships  ProjectMembership[]
+  auditEvents  AuditEvent[]
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Project {
+  id           String              @id @default(cuid())
+  name         String
+  baseEndpoint String
+  routeKey     String              @unique
+  currentMajor Int                 @default(1)
+  currentMinor Int                 @default(0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  memberships  ProjectMembership[]
+  auditEvents  AuditEvent[]
+}
+
+model ProjectMembership {
+  projectId String
+  userId    String
+  role      ProjectRole
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@id([projectId, userId])
+  @@index([userId])
+}
+
+model AuditEvent {
+  id        String      @id @default(cuid())
+  actorId   String?
+  projectId String?
+  action    AuditAction
+  metadata  Json
+  createdAt DateTime    @default(now())
+  actor     User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  project   Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([projectId])
+}
