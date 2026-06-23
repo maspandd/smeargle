@@ -12,7 +12,8 @@ export type AddFieldActionResult =
       versionLabel: string;
       snapshot: SchemaSnapshot;
     }
-  | { ok: false; code: "VERSION_CONFLICT" };
+  | { ok: false; code: "VERSION_CONFLICT" }
+  | { ok: false; code: "VALIDATION_ERROR"; message: string };
 
 type SchemaBuilderProps = {
   projectId: string;
@@ -46,6 +47,10 @@ export function SchemaBuilder({
     const result = await onAddField(projectId, versionId, parentFieldPath, input);
 
     if (!result.ok) {
+      if (result.code === "VALIDATION_ERROR") {
+        throw new Error(result.message);
+      }
+
       setError("This schema was updated elsewhere. Refresh and try again.");
       return;
     }

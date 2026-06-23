@@ -83,4 +83,21 @@ describe("schema builder", () => {
     expect(screen.getByText("Email")).toBeVisible();
     expect(screen.getByText("LLM-Powered")).toBeVisible();
   });
+
+  it("keeps the field dialog open and displays server validation errors", async () => {
+    const user = userEvent.setup();
+    const onAddField = vi.fn().mockResolvedValue({
+      ok: false,
+      code: "VALIDATION_ERROR",
+      message: "Duplicate field name at price",
+    });
+    renderBuilder(onAddField);
+
+    await user.click(screen.getByRole("button", { name: "Add Field" }));
+    await user.type(screen.getByLabelText("Field name"), "price");
+    await user.click(screen.getByRole("button", { name: "Save Field" }));
+
+    expect(await screen.findByText("Duplicate field name at price")).toBeVisible();
+    expect(screen.getByRole("dialog")).toBeVisible();
+  });
 });

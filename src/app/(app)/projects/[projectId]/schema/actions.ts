@@ -81,7 +81,7 @@ export async function addFieldAction(
 ) {
   const actorId = await currentUserId();
   const parsed = addFieldInput.parse(input);
-  const result = await mutateSchema({
+  const result = await safeMutateSchema({
     actorId,
     projectId,
     expectedVersionId,
@@ -101,6 +101,23 @@ export async function addFieldAction(
     versionLabel: result.version.versionLabel,
     snapshot: result.version.snapshot,
   };
+}
+
+async function safeMutateSchema(
+  input: Parameters<typeof mutateSchema>[0],
+): Promise<
+  | Awaited<ReturnType<typeof mutateSchema>>
+  | { ok: false; code: "VALIDATION_ERROR"; message: string }
+> {
+  try {
+    return await mutateSchema(input);
+  } catch (error) {
+    return {
+      ok: false,
+      code: "VALIDATION_ERROR",
+      message: error instanceof Error ? error.message : "Unable to save field",
+    };
+  }
 }
 
 function buildField(parsed: z.infer<typeof addFieldInput>): FieldDefinition {
