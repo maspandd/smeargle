@@ -29,6 +29,7 @@ enum AuditAction {
   MEMBER_ROLE_CHANGED
   MEMBER_REMOVED
   SCHEMA_MUTATED
+  DATA_GENERATED
 }
 
 enum ProjectDataStatus {
