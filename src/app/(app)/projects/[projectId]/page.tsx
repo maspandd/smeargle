@@ -1,15 +1,20 @@
 import type { ProjectRole } from "@prisma/client";
 import { requireUser } from "@/features/auth/auth-service";
 import { requireProjectCapability } from "@/features/projects/authorization";
+import { SchemaBuilder } from "@/features/schema/components/schema-builder";
+import type { SchemaSnapshot } from "@/features/schema/schema-types";
 import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { addRootFieldAction } from "./schema/actions";
 
 type ProjectWorkspaceProps = {
   name: string;
   baseEndpoint: string;
   currentVersion: string;
+  currentVersionId: string;
+  currentSnapshot: SchemaSnapshot;
   memberCount: number;
   projectId: string;
   role: ProjectRole | "ADMIN";
@@ -19,6 +24,8 @@ export function ProjectWorkspace({
   name,
   baseEndpoint,
   currentVersion,
+  currentVersionId,
+  currentSnapshot,
   memberCount,
   projectId,
   role,
@@ -52,23 +59,14 @@ export function ProjectWorkspace({
       </header>
 
       <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold">Schema Builder</h2>
-            <p className="mt-1 text-zinc-600">Define the fields for this mock API.</p>
-          </div>
-          <button
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-zinc-300"
-            disabled={readOnly}
-            title={readOnly ? "Viewers cannot edit the schema" : undefined}
-            type="button"
-          >
-            Add Field
-          </button>
-        </div>
-        <div className="mt-8 border-y border-dashed border-zinc-300 py-16 text-center text-zinc-500">
-          No fields yet. Add a field to begin the v1.0 schema.
-        </div>
+        <SchemaBuilder
+          initialSnapshot={currentSnapshot}
+          initialVersionId={currentVersionId}
+          initialVersionLabel={currentVersion}
+          onAddField={addRootFieldAction}
+          projectId={projectId}
+          readOnly={readOnly}
+        />
       </section>
     </main>
   );
@@ -105,6 +103,12 @@ export default async function ProjectPage({
       baseEndpoint: true,
       currentMajor: true,
       currentMinor: true,
+      currentSchemaVersion: {
+        select: {
+          id: true,
+          snapshot: true,
+        },
+      },
       _count: { select: { memberships: true } },
       memberships: {
         where: { userId: user.id },
@@ -118,7 +122,13 @@ export default async function ProjectPage({
   return (
     <ProjectWorkspace
       baseEndpoint={project.baseEndpoint}
+      currentSnapshot={
+        (project.currentSchemaVersion?.snapshot as SchemaSnapshot | undefined) ?? {
+          fields: [],
+        }
+      }
       currentVersion={`v${project.currentMajor}.${project.currentMinor}`}
+      currentVersionId={project.currentSchemaVersion?.id ?? ""}
       memberCount={project._count.memberships}
       name={project.name}
       projectId={projectId}
