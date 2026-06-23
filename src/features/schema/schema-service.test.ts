@@ -187,4 +187,166 @@ describe("schema service authorization and conflicts", () => {
       prisma.schemaVersion.count({ where: { projectId: project.id } }),
     ).resolves.toBe(2);
   });
+
+  it("keeps EMPTY data status for compatible mutations when no records exist", async () => {
+    const owner = await createUser("owner@example.test");
+    const project = await createProject({
+      actorId: owner.id,
+      name: "Products API",
+      baseEndpoint: "/api/products",
+    });
+    const version = await currentVersion(project.id);
+
+    const result = await mutateSchema({
+      actorId: owner.id,
+      projectId: project.id,
+      expectedVersionId: version.id,
+      mutation: {
+        type: "addField",
+        parentFieldPath: [],
+        field: {
+          id: "fld_nickname",
+          name: "nickname",
+          type: "string",
+          required: false,
+        },
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        compatibility: expect.objectContaining({
+          kind: "COMPATIBLE",
+          operation: "NONE",
+        }),
+      }),
+    );
+    await expect(
+      prisma.project.findUniqueOrThrow({
+        where: { id: project.id },
+        select: { dataStatus: true },
+      }),
+    ).resolves.toEqual({ dataStatus: "EMPTY" });
+  });
+
+  it("keeps COMPATIBLE data status for transformable deletes and records the affected path", async () => {
+    const owner = await createUser("owner@example.test");
+    const project = await createProject({
+      actorId: owner.id,
+      name: "Products API",
+      baseEndpoint: "/api/products",
+    });
+    const initialVersion = await currentVersion(project.id);
+
+    await mutateSchema({
+      actorId: owner.id,
+      projectId: project.id,
+      expectedVersionId: initialVersion.id,
+      mutation: {
+        type: "addField",
+        parentFieldPath: [],
+        field: {
+          id: "fld_description",
+          name: "description",
+          type: "string",
+          required: false,
+        },
+      },
+    });
+
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { dataStatus: "COMPATIBLE" },
+    });
+
+    const current = await currentVersion(project.id);
+    const result = await mutateSchema({
+      actorId: owner.id,
+      projectId: project.id,
+      expectedVersionId: current.id,
+      mutation: {
+        type: "deleteField",
+        fieldPath: ["fld_description"],
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        compatibility: expect.objectContaining({
+          kind: "TRANSFORMABLE",
+          operation: "DELETE_KEYS",
+          affectedPaths: ["description"],
+        }),
+      }),
+    );
+    await expect(
+      prisma.project.findUniqueOrThrow({
+        where: { id: project.id },
+        select: { dataStatus: true },
+      }),
+    ).resolves.toEqual({ dataStatus: "COMPATIBLE" });
+    await expect(
+      prisma.auditEvent.findFirstOrThrow({
+        where: { projectId: project.id, action: "SCHEMA_MUTATED" },
+        orderBy: { createdAt: "desc" },
+        select: { metadata: true },
+      }),
+    ).resolves.toEqual({
+      metadata: expect.objectContaining({
+        compatibilityKind: "TRANSFORMABLE",
+        compatibilityOperation: "DELETE_KEYS",
+        affectedPaths: ["description"],
+      }),
+    });
+  });
+
+  it("marks COMPATIBLE data as INCOMPATIBLE for breaking schema changes", async () => {
+    const owner = await createUser("owner@example.test");
+    const project = await createProject({
+      actorId: owner.id,
+      name: "Products API",
+      baseEndpoint: "/api/products",
+    });
+    const version = await currentVersion(project.id);
+
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { dataStatus: "COMPATIBLE" },
+    });
+
+    const result = await mutateSchema({
+      actorId: owner.id,
+      projectId: project.id,
+      expectedVersionId: version.id,
+      mutation: {
+        type: "addField",
+        parentFieldPath: [],
+        field: {
+          id: "fld_price",
+          name: "price",
+          type: "number",
+          required: true,
+        },
+      },
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        compatibility: expect.objectContaining({
+          kind: "INCOMPATIBLE",
+          operation: "REGENERATE_RECORDS",
+          affectedPaths: ["price"],
+        }),
+      }),
+    );
+    await expect(
+      prisma.project.findUniqueOrThrow({
+        where: { id: project.id },
+        select: { dataStatus: true },
+      }),
+    ).resolves.toEqual({ dataStatus: "INCOMPATIBLE" });
+  });
 });

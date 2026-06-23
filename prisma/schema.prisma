@@ -31,6 +31,12 @@ enum AuditAction {
   SCHEMA_MUTATED
 }
 
+enum ProjectDataStatus {
+  EMPTY
+  COMPATIBLE
+  INCOMPATIBLE
+}
+
 model User {
   id             String              @id @default(cuid())
   email          String              @unique
@@ -64,6 +70,7 @@ model Project {
   routeKey               String              @unique
   currentMajor           Int                 @default(1)
   currentMinor           Int                 @default(0)
+  dataStatus             ProjectDataStatus   @default(EMPTY)
   currentSchemaVersionId String?             @unique
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
