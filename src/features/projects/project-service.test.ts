@@ -92,6 +92,11 @@ describe("project creation", () => {
     expect(project.routeKey).not.toBe(project.id);
     expect(project.routeKey.length).toBeGreaterThanOrEqual(20);
     await expect(
+      prisma.schemaVersion.count({
+        where: { projectId: project.id, versionLabel: "v1.0" },
+      }),
+    ).resolves.toBe(1);
+    await expect(
       prisma.projectMembership.count({
         where: { projectId: project.id, role: "OWNER" },
       }),
@@ -113,6 +118,7 @@ describe("project creation", () => {
     ).rejects.toThrow();
 
     await expect(prisma.project.count()).resolves.toBe(0);
+    await expect(prisma.schemaVersion.count()).resolves.toBe(0);
     await expect(prisma.projectMembership.count()).resolves.toBe(0);
     await expect(prisma.auditEvent.count()).resolves.toBe(0);
   });

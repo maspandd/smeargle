@@ -31,16 +31,17 @@ enum AuditAction {
 }
 
 model User {
-  id           String              @id @default(cuid())
-  email        String              @unique
-  passwordHash String
-  systemRole   SystemRole          @default(USER)
-  status       UserStatus          @default(ACTIVE)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  sessions     Session[]
-  memberships  ProjectMembership[]
-  auditEvents  AuditEvent[]
+  id             String              @id @default(cuid())
+  email          String              @unique
+  passwordHash   String
+  systemRole     SystemRole          @default(USER)
+  status         UserStatus          @default(ACTIVE)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  sessions       Session[]
+  memberships    ProjectMembership[]
+  auditEvents    AuditEvent[]
+  schemaVersions SchemaVersion[]
 }
 
 model Session {
@@ -56,16 +57,42 @@ model Session {
 }
 
 model Project {
-  id           String              @id @default(cuid())
-  name         String
-  baseEndpoint String
-  routeKey     String              @unique
-  currentMajor Int                 @default(1)
-  currentMinor Int                 @default(0)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  memberships  ProjectMembership[]
-  auditEvents  AuditEvent[]
+  id                     String              @id @default(cuid())
+  name                   String
+  baseEndpoint           String
+  routeKey               String              @unique
+  currentMajor           Int                 @default(1)
+  currentMinor           Int                 @default(0)
+  currentSchemaVersionId String?             @unique
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  memberships            ProjectMembership[]
+  auditEvents            AuditEvent[]
+  schemaVersions         SchemaVersion[]     @relation("ProjectSchemaVersions")
+  currentSchemaVersion   SchemaVersion?      @relation("CurrentSchemaVersion", fields: [currentSchemaVersionId], references: [id], onDelete: SetNull)
+}
+
+model SchemaVersion {
+  id                String          @id @default(cuid())
+  projectId         String
+  major             Int
+  minor             Int
+  versionLabel      String
+  snapshot          Json
+  changeSummary     String
+  actorId           String?
+  restoredFromId    String?
+  createdAt         DateTime        @default(now())
+  project           Project         @relation("ProjectSchemaVersions", fields: [projectId], references: [id], onDelete: Cascade)
+  currentForProject Project?        @relation("CurrentSchemaVersion")
+  actor             User?           @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  restoredFrom      SchemaVersion?  @relation("SchemaVersionRestore", fields: [restoredFromId], references: [id], onDelete: SetNull)
+  restoredVersions  SchemaVersion[] @relation("SchemaVersionRestore")
+
+  @@unique([projectId, major, minor])
+  @@index([projectId])
+  @@index([actorId])
+  @@index([restoredFromId])
 }
 
 model ProjectMembership {

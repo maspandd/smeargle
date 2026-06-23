@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createRouteKey } from "@/lib/route-key";
+import { createInitialSchemaVersionInTransaction } from "../versions/version-service";
 import { createProjectInput } from "./project-schema";
 
 type CreateProjectRequest = {
@@ -11,8 +12,8 @@ type CreateProjectRequest = {
 export async function createProject(request: CreateProjectRequest) {
   const input = createProjectInput.parse(request);
 
-  const project = await prisma.$transaction((transaction) =>
-    transaction.project.create({
+  const project = await prisma.$transaction(async (transaction) => {
+    const created = await transaction.project.create({
       data: {
         name: input.name,
         baseEndpoint: input.baseEndpoint,
@@ -28,8 +29,14 @@ export async function createProject(request: CreateProjectRequest) {
           },
         },
       },
-    }),
-  );
+    });
+    const schemaVersion = await createInitialSchemaVersionInTransaction(transaction, {
+      actorId: request.actorId,
+      projectId: created.id,
+    });
+
+    return { ...created, currentSchemaVersionId: schemaVersion.id };
+  });
 
   return {
     ...project,
@@ -50,6 +57,9 @@ export async function listProjectsForUser(userId: string) {
           baseEndpoint: true,
           currentMajor: true,
           currentMinor: true,
+          currentSchemaVersion: {
+            select: { versionLabel: true },
+          },
         },
       },
     },
@@ -58,6 +68,8 @@ export async function listProjectsForUser(userId: string) {
   return memberships.map(({ project, role }) => ({
     ...project,
     role,
-    currentVersion: `v${project.currentMajor}.${project.currentMinor}`,
+    currentVersion:
+      project.currentSchemaVersion?.versionLabel ??
+      `v${project.currentMajor}.${project.currentMinor}`,
   }));
 }
