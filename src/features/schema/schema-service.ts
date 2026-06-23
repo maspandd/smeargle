@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  type CompatibilityKind,
+  classifySchemaChange,
+} from "./compatibility";
 import { requireProjectCapability } from "../projects/authorization";
 import { addField, deleteField, editField, reorderField } from "./schema-mutations";
 import type { FieldDefinition, SchemaSnapshot } from "./schema-types";
@@ -43,6 +47,7 @@ type MutateSchemaRequest = {
 type MutateSchemaResult =
   | {
       ok: true;
+      compatibility: ReturnType<typeof classifySchemaChange>;
       version: {
         id: string;
         versionLabel: string;
@@ -64,6 +69,7 @@ export async function mutateSchema(
     const project = await transaction.project.findUniqueOrThrow({
       where: { id: request.projectId },
       select: {
+        dataStatus: true,
         currentSchemaVersionId: true,
         currentSchemaVersion: true,
       },
@@ -77,10 +83,12 @@ export async function mutateSchema(
       throw new Error("Project does not have a current schema version");
     }
 
+    const beforeSnapshot = project.currentSchemaVersion.snapshot as SchemaSnapshot;
     const snapshot = applyMutation(
-      project.currentSchemaVersion.snapshot as SchemaSnapshot,
+      beforeSnapshot,
       request.mutation,
     );
+    const compatibility = classifySchemaChange(beforeSnapshot, snapshot);
     const major = project.currentSchemaVersion.major;
     const minor = project.currentSchemaVersion.minor + 1;
     const versionLabel = formatVersionLabel(major, minor);
@@ -102,6 +110,7 @@ export async function mutateSchema(
         currentMajor: major,
         currentMinor: minor,
         currentSchemaVersionId: version.id,
+        dataStatus: nextDataStatus(project.dataStatus, compatibility.kind),
       },
     });
     await transaction.auditEvent.create({
@@ -113,12 +122,18 @@ export async function mutateSchema(
           versionId: version.id,
           versionLabel,
           mutationType: request.mutation.type,
+          compatibilityKind: compatibility.kind,
+          compatibilityOperation: compatibility.operation,
+          affectedFieldIds: compatibility.affectedFieldIds,
+          affectedPaths: compatibility.affectedPaths,
+          compatibilityWarning: compatibility.warning,
         },
       },
     });
 
     return {
       ok: true,
+      compatibility,
       version: {
         id: version.id,
         versionLabel: version.versionLabel,
@@ -164,4 +179,21 @@ function summarizeMutation(mutation: SchemaMutation) {
 
 function formatVersionLabel(major: number, minor: number) {
   return `v${major}.${minor}`;
+}
+
+function nextDataStatus(
+  current: "EMPTY" | "COMPATIBLE" | "INCOMPATIBLE",
+  compatibilityKind: CompatibilityKind,
+) {
+  if (current === "EMPTY") {
+    return "EMPTY" as const;
+  }
+  if (current === "INCOMPATIBLE") {
+    return "INCOMPATIBLE" as const;
+  }
+  if (compatibilityKind === "INCOMPATIBLE") {
+    return "INCOMPATIBLE" as const;
+  }
+
+  return "COMPATIBLE" as const;
 }
