@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/db";
 import { MockRuntimeError } from "./runtime-error";
 import { randomUUID } from "node:crypto";
-import type { Project, SchemaVersion } from "@prisma/client";
+import type { Project, SchemaVersion, Prisma } from "@prisma/client";
 
 export interface RuntimeContext {
   project: Project;
   resource: string;
   requestId: string;
   recordId?: string;
-  schemaSnapshot?: any; // To be typed properly later if needed
+  schemaSnapshot?: Prisma.JsonValue;
 }
 
 export async function resolveRuntimeContext(
@@ -51,7 +51,7 @@ export async function resolveRuntimeContext(
   const recordId = decodedSegments.length === 2 ? decodedSegments[1] : undefined;
 
   const currentSchemaVersion = project.schemaVersions[0];
-  const schemaSnapshot = currentSchemaVersion ? (currentSchemaVersion.snapshot as any) : undefined;
+  const schemaSnapshot = currentSchemaVersion ? (currentSchemaVersion as SchemaVersion).snapshot : undefined;
 
   return {
     project,
