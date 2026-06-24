@@ -1,6 +1,8 @@
 import { NextRequest } from "next/server";
 import { resolveRuntimeContext } from "@/features/mock-runtime/runtime-context";
 import { toJsonErrorResponse, MockRuntimeError } from "@/features/mock-runtime/runtime-error";
+import { getRecords, getRecordById } from "@/features/mock-runtime/read-service";
+import { toJsonSuccessResponse } from "@/features/mock-runtime/json-response";
 
 type MockRouteParams = { params: Promise<{ routeKey: string; segments: string[] }> };
 
@@ -11,7 +13,17 @@ async function handleRuntimeRequest(
   try {
     const context = await resolveRuntimeContext(params.routeKey, params.segments);
     
-    // For now we just reject as METHOD_DISABLED since handlers aren't implemented yet
+    if (request.method === "GET") {
+      if (context.recordId) {
+        const record = await getRecordById(context);
+        return toJsonSuccessResponse(record);
+      } else {
+        const result = await getRecords(context, request.nextUrl.searchParams);
+        return toJsonSuccessResponse(result.data, result.meta);
+      }
+    }
+    
+    // Reject other methods for now
     throw new MockRuntimeError("METHOD_DISABLED", `Method ${request.method} is not implemented yet`);
   } catch (error) {
     return toJsonErrorResponse(error);

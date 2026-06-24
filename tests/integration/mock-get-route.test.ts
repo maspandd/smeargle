@@ -29,7 +29,7 @@ describe("Mock API GET Routes Integration", () => {
       });
     }
 
-    const req = new NextRequest("http://localhost:3000/api/mock/key_collection_route/products?page=1&pageSize=2");
+    const req = new NextRequest("http://localhost:3000/api/mock/key_collection_route/products?page=1&pageSize=2", { method: "GET" });
     const response = await GET(req, { params: Promise.resolve({ routeKey: "key_collection_route", segments: ["products"] }) });
 
     expect(response.status).toBe(200);
@@ -62,7 +62,7 @@ describe("Mock API GET Routes Integration", () => {
       },
     });
 
-    const req = new NextRequest("http://localhost:3000/api/mock/key_record_route/products/record-999");
+    const req = new NextRequest("http://localhost:3000/api/mock/key_record_route/products/record-999", { method: "GET" });
     const response = await GET(req, { params: Promise.resolve({ routeKey: "key_record_route", segments: ["products", "record-999"] }) });
 
     expect(response.status).toBe(200);
