@@ -7,6 +7,8 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createGenerationJobAction } from "./actions";
+import { queryRecords } from "@/features/records/record-query";
+import { DataPreview } from "@/features/records/components/data-preview";
 
 export default async function ProjectDataPage({
   params,
@@ -38,6 +40,7 @@ export default async function ProjectDataPage({
       name: true,
       baseEndpoint: true,
       routeKey: true,
+      dataStatus: true,
       currentSchemaVersion: {
         select: { snapshot: true },
       },
@@ -55,6 +58,14 @@ export default async function ProjectDataPage({
     | undefined;
   const readOnly =
     user.systemRole !== "ADMIN" && project.memberships[0]?.role === "VIEWER";
+
+  // Fetch page data
+  const { totalCount, records } = await queryRecords({
+    actorId: user.id,
+    projectId,
+    page: 1,
+    pageSize: 10,
+  });
 
   return (
     <main className="min-h-screen bg-zinc-100 px-4 py-8 text-zinc-950 sm:px-6">
@@ -74,13 +85,31 @@ export default async function ProjectDataPage({
           </Link>
         </header>
 
-        <GenerationForm
-          action={createGenerationJobAction}
-          endpoint={`/api/mock/${project.routeKey}`}
-          projectId={projectId}
-          readOnly={readOnly}
-          schemaEmpty={!snapshot || snapshot.fields.length === 0}
-        />
+        {project.dataStatus === "INCOMPATIBLE" ? (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+            <h3 className="font-semibold text-red-800">Incompatible dataset</h3>
+            <p className="mt-1 text-sm text-red-700">
+              The schema has changed since these records were generated. You should regenerate or delete this dataset to restore compatibility.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <GenerationForm
+              action={createGenerationJobAction}
+              endpoint={`/api/mock/${project.routeKey}`}
+              projectId={projectId}
+              readOnly={readOnly}
+              schemaEmpty={!snapshot || snapshot.fields.length === 0}
+            />
+          </div>
+          <div className="lg:col-span-2">
+            {snapshot && totalCount > 0 ? (
+              <DataPreview schema={snapshot} records={records} totalCount={totalCount} page={1} pageSize={10} />
+            ) : null}
+          </div>
+        </div>
       </div>
     </main>
   );
