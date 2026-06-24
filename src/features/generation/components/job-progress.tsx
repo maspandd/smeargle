@@ -2,12 +2,12 @@
 
 import type { GenerationStatus } from "@prisma/client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type JobProgressProps = {
   jobId: string;
   projectId: string;
   seed: string;
+  onComplete?: () => void;
 };
 
 type JobStatusResponse = {
@@ -24,8 +24,7 @@ const terminalStatuses = new Set<GenerationStatus>([
   "CANCELLED",
 ]);
 
-export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
-  const router = useRouter();
+export function JobProgress({ jobId, projectId, seed, onComplete }: JobProgressProps) {
   const [status, setStatus] = useState<GenerationStatus>("PENDING");
   const [pollError, setPollError] = useState(false);
   const [warningSummary, setWarningSummary] = useState<{ fallback?: number } | null>(null);
@@ -56,7 +55,11 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
 
         if (terminalStatuses.has(result.status)) {
           if (result.status === "COMPLETED") {
-            router.refresh();
+            if (onComplete) {
+              onComplete();
+            } else {
+              window.location.reload();
+            }
           }
           return;
         }
@@ -77,7 +80,7 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
       cancelled = true;
       if (timeout) clearTimeout(timeout);
     };
-  }, [jobId, projectId]);
+  }, [jobId, projectId, onComplete]);
 
   const isFailure = status === "FAILED" || status === "CANCELLED";
   const message =
