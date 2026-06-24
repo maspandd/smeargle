@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateRecord } from "../../src/features/generation/record-generator";
-import { createRandomSource } from "../../src/features/generation/random-source";
+
 import type { SchemaSnapshot } from "../../src/features/schema/schema-types";
 
 describe("Performance: Faker Generation", () => {
@@ -26,10 +26,10 @@ describe("Performance: Faker Generation", () => {
     const start = performance.now();
 
     for (let i = 0; i < count; i++) {
-      const source = createRandomSource(`perf-seed-${i}`);
       generateRecord({
         schema: representativeSchema,
-        source,
+        seed: "perf-seed",
+        ordinal: i,
         nullRate: 0.1,
       });
     }
