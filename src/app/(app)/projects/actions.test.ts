@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/features/auth/password";
 import { login } from "@/features/auth/auth-service";
@@ -18,7 +18,7 @@ vi.mock("next/headers", () => ({
 }));
 vi.mock("next/navigation", () => ({ redirect: nextMocks.redirect }));
 
-afterEach(async () => {
+beforeEach(async () => {
   nextMocks.cookieValue = undefined;
   nextMocks.redirect.mockReset();
   await resetDatabase();
