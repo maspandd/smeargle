@@ -6,6 +6,8 @@ import type {
   GenerationFormValues,
 } from "@/features/generation/components/generation-form";
 import { createGenerationJob } from "@/features/generation/generation-service";
+import { runGenerationJob } from "@/features/generation/job-runner";
+import { FakeLlmProvider } from "@/features/generation/fake-llm-provider";
 import { cookies } from "next/headers";
 
 export async function createGenerationJobAction(
@@ -27,7 +29,16 @@ export async function createGenerationJobAction(
     confirmedReplacement: values.confirmedReplacement,
   });
 
-  if (result.ok || result.code === "REPLACEMENT_CONFIRMATION_REQUIRED") {
+  if (result.ok) {
+    // Fire and forget background job
+    const llmProvider = new FakeLlmProvider(async () => {
+      throw new Error("Real LLM provider not configured");
+    });
+    void runGenerationJob(result.jobId, { llmProvider }).catch(console.error);
+    return result;
+  }
+
+  if (result.code === "REPLACEMENT_CONFIRMATION_REQUIRED") {
     return result;
   }
 

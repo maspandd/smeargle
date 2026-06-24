@@ -2,6 +2,7 @@
 
 import type { GenerationStatus } from "@prisma/client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type JobProgressProps = {
   jobId: string;
@@ -12,6 +13,9 @@ type JobProgressProps = {
 type JobStatusResponse = {
   jobId: string;
   status: GenerationStatus;
+  warningSummary?: {
+    fallback?: number;
+  } | null;
 };
 
 const terminalStatuses = new Set<GenerationStatus>([
@@ -21,8 +25,10 @@ const terminalStatuses = new Set<GenerationStatus>([
 ]);
 
 export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
+  const router = useRouter();
   const [status, setStatus] = useState<GenerationStatus>("PENDING");
   const [pollError, setPollError] = useState(false);
+  const [warningSummary, setWarningSummary] = useState<{ fallback?: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +50,16 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
 
         setPollError(false);
         setStatus(result.status);
+        if (result.warningSummary) {
+          setWarningSummary(result.warningSummary);
+        }
 
-        if (terminalStatuses.has(result.status)) return;
+        if (terminalStatuses.has(result.status)) {
+          if (result.status === "COMPLETED") {
+            router.refresh();
+          }
+          return;
+        }
       } catch {
         if (cancelled) return;
         setPollError(true);
@@ -93,6 +107,11 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
       <p className="mt-2 text-xs text-zinc-500">
         Reproducible seed: <span className="font-mono">{seed}</span>
       </p>
+      {warningSummary?.fallback ? (
+        <p className="mt-2 text-xs text-amber-700">
+          Used fallback faker generation for {warningSummary.fallback} records.
+        </p>
+      ) : null}
       {pollError ? (
         <p className="mt-2 text-xs text-amber-700">
           Status is temporarily unavailable. Retrying automatically.

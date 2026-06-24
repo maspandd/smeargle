@@ -11,6 +11,10 @@ const password = "Correct-Horse-42";
 async function main() {
   switch (action) {
     case "reset":
+      await prisma.mockRecord.deleteMany();
+      await prisma.generatedRecordStage.deleteMany();
+      await prisma.generationJob.deleteMany();
+      await prisma.schemaVersion.deleteMany();
       await prisma.auditEvent.deleteMany();
       await prisma.projectMembership.deleteMany();
       await prisma.session.deleteMany();

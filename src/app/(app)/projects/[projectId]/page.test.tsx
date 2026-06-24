@@ -21,6 +21,9 @@ describe("project workspace", () => {
     expect(screen.getByText("/api/products")).toBeVisible();
     expect(screen.getAllByText("v1.0")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Add Field" })).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Generate Mock Data" }),
+    ).toHaveAttribute("href", "/projects/project-1/data");
     expect(screen.getByRole("link", { name: "Members" })).toHaveAttribute(
       "href",
       "/projects/project-1/members",
