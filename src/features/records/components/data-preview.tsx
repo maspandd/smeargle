@@ -3,7 +3,7 @@
 import type { SchemaSnapshot } from "@/features/schema/schema-types";
 import type { MockRecord } from "@prisma/client";
 
-function JsonDisclosure({ value, label }: { value: any; label: string }) {
+function JsonDisclosure({ value, label }: { value: unknown; label: string }) {
   return (
     <details className="group">
       <summary className="cursor-pointer list-none text-blue-600 hover:text-blue-800">
@@ -17,7 +17,7 @@ function JsonDisclosure({ value, label }: { value: any; label: string }) {
   );
 }
 
-function renderCellValue(value: any) {
+function renderCellValue(value: unknown) {
   if (value === null || value === undefined) {
     return <span className="italic text-zinc-400">null</span>;
   }
@@ -48,7 +48,6 @@ export function DataPreview({
 }) {
   const columns = schema.fields;
   const startIndex = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
-  const endIndex = Math.min(page * pageSize, totalCount);
 
   return (
     <div className="space-y-4">
@@ -69,7 +68,7 @@ export function DataPreview({
           </thead>
           <tbody className="divide-y divide-zinc-200 bg-white">
             {records.map((record) => {
-              const value = (record.value as Record<string, any>) || {};
+              const value = (record.value as Record<string, unknown>) || {};
               return (
                 <tr key={record.id} className="hover:bg-zinc-50">
                   {columns.map((col) => (
