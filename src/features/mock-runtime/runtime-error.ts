@@ -8,7 +8,8 @@ export type MockRuntimeErrorCode =
   | "VALIDATION_ERROR"
   | "CONFLICT"
   | "RATE_LIMITED"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "MALFORMED_REQUEST";
 
 export class MockRuntimeError extends Error {
   constructor(
@@ -59,6 +60,9 @@ export function toJsonErrorResponse(error: unknown, requestId?: string): Respons
       case "INTERNAL_ERROR":
       default:
         status = 500;
+        break;
+      case "MALFORMED_REQUEST":
+        status = 400;
         break;
     }
   }
