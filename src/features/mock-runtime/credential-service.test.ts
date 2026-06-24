@@ -48,7 +48,7 @@ describe("Credential Service", () => {
     // List should not include plaintext
     const list = await listApiCredentials(projectId, ownerId);
     expect(list[0].id).toEqual(credential.id);
-    expect((list[0] as any).plaintext).toBeUndefined();
+    expect(list[0]).not.toHaveProperty("plaintext");
   });
 
   it("requires a label", async () => {
