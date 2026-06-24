@@ -23,6 +23,7 @@ function renderBuilder(
 ) {
   render(
     <SchemaBuilder
+      generationHref="/projects/project-1/data"
       initialSnapshot={{ fields: [] }}
       initialVersionId="version-1"
       initialVersionLabel="v1.0"

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { SchemaSnapshot } from "../schema-types";
 import type { FieldDialogInput } from "./field-dialog";
@@ -21,6 +22,7 @@ type SchemaBuilderProps = {
   initialVersionId: string;
   initialVersionLabel: string;
   initialSnapshot: SchemaSnapshot;
+  generationHref: string;
   onAddField: (
     projectId: string,
     expectedVersionId: string,
@@ -35,6 +37,7 @@ export function SchemaBuilder({
   initialVersionId,
   initialVersionLabel,
   initialSnapshot,
+  generationHref,
   onAddField,
 }: SchemaBuilderProps) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
@@ -71,13 +74,12 @@ export function SchemaBuilder({
           <span className="rounded-md bg-orange-50 px-3 py-1.5 text-sm font-semibold text-orange-700">
             {versionLabel}
           </span>
-          <button
-            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-400"
-            disabled
-            type="button"
+          <Link
+            className="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:border-orange-400 hover:text-orange-700"
+            href={generationHref}
           >
             Generate Mock Data
-          </button>
+          </Link>
         </div>
       </div>
 

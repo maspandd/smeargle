@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { JobProgress } from "./job-progress";
 
 export type GenerationFormValues = {
@@ -55,6 +56,7 @@ export function GenerationForm({
   readOnly,
   schemaEmpty,
 }: GenerationFormProps) {
+  const router = useRouter();
   const [count, setCount] = useState("10");
   const [seed, setSeed] = useState("");
   const [nullPercentage, setNullPercentage] = useState("0");
@@ -290,6 +292,7 @@ export function GenerationForm({
           jobId={createdJob.id}
           projectId={projectId}
           seed={createdJob.seed}
+          onComplete={() => router.refresh()}
         />
       ) : null}
 

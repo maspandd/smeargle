@@ -7,11 +7,15 @@ type JobProgressProps = {
   jobId: string;
   projectId: string;
   seed: string;
+  onComplete?: () => void;
 };
 
 type JobStatusResponse = {
   jobId: string;
   status: GenerationStatus;
+  warningSummary?: {
+    fallback?: number;
+  } | null;
 };
 
 const terminalStatuses = new Set<GenerationStatus>([
@@ -20,9 +24,10 @@ const terminalStatuses = new Set<GenerationStatus>([
   "CANCELLED",
 ]);
 
-export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
+export function JobProgress({ jobId, projectId, seed, onComplete }: JobProgressProps) {
   const [status, setStatus] = useState<GenerationStatus>("PENDING");
   const [pollError, setPollError] = useState(false);
+  const [warningSummary, setWarningSummary] = useState<{ fallback?: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +49,20 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
 
         setPollError(false);
         setStatus(result.status);
+        if (result.warningSummary) {
+          setWarningSummary(result.warningSummary);
+        }
 
-        if (terminalStatuses.has(result.status)) return;
+        if (terminalStatuses.has(result.status)) {
+          if (result.status === "COMPLETED") {
+            if (onComplete) {
+              onComplete();
+            } else {
+              window.location.reload();
+            }
+          }
+          return;
+        }
       } catch {
         if (cancelled) return;
         setPollError(true);
@@ -63,7 +80,7 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
       cancelled = true;
       if (timeout) clearTimeout(timeout);
     };
-  }, [jobId, projectId]);
+  }, [jobId, projectId, onComplete]);
 
   const isFailure = status === "FAILED" || status === "CANCELLED";
   const message =
@@ -93,6 +110,11 @@ export function JobProgress({ jobId, projectId, seed }: JobProgressProps) {
       <p className="mt-2 text-xs text-zinc-500">
         Reproducible seed: <span className="font-mono">{seed}</span>
       </p>
+      {warningSummary?.fallback ? (
+        <p className="mt-2 text-xs text-amber-700">
+          Used fallback faker generation for {warningSummary.fallback} records.
+        </p>
+      ) : null}
       {pollError ? (
         <p className="mt-2 text-xs text-amber-700">
           Status is temporarily unavailable. Retrying automatically.

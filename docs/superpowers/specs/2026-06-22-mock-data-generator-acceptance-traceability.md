@@ -15,12 +15,12 @@
 | AC-02.02 | Add an Email semantic field with its badge | 2 | `src/features/schema/components/schema-builder.test.tsx`, `tests/acceptance/schema-fields.spec.ts`, `tests/acceptance/schema-builder.spec.ts` |
 | AC-02.03 | Reject a duplicate sibling field name | 2 | `src/features/schema/schema-parser.test.ts`, `src/features/schema/schema-mutations.test.ts`, `tests/integration/schema-transaction.test.ts`, `tests/acceptance/schema-fields.spec.ts` |
 | AC-02.04 | Add a constrained Number field | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-fields.spec.ts`, `tests/acceptance/schema-constraints.spec.ts` |
-| AC-03.01 | Generate ten complete non-null records and preview them | 3 | Domain + job integration + browser |
-| AC-03.02 | Generate records using the configured null policy and render null accessibly | 3 | Domain + component |
-| AC-03.03 | Reject a missing record count | 3 | Component + route integration |
-| AC-03.04 | Reject generation for an empty schema | 3 | Domain + browser |
-| AC-03.05 | Ask before replacing an existing dataset | 3 | Component + browser |
-| AC-03.06 | Atomically replace records after confirmation | 3 | Database integration + browser |
+| AC-03.01 | Generate ten complete non-null records and preview them | 3 | `tests/acceptance/data-generation.spec.ts`, `tests/integration/generation-job.test.ts` |
+| AC-03.02 | Generate records using the configured null policy and render null accessibly | 3 | `tests/acceptance/data-generation.spec.ts`, `src/features/records/components/data-preview.test.tsx` |
+| AC-03.03 | Reject a missing record count | 3 | `tests/acceptance/data-generation.spec.ts`, `src/features/generation/components/generation-form.test.tsx` |
+| AC-03.04 | Reject generation for an empty schema | 3 | `tests/acceptance/data-generation.spec.ts` |
+| AC-03.05 | Ask before replacing an existing dataset | 3 | `tests/acceptance/data-generation.spec.ts`, `src/features/generation/components/generation-form.test.tsx` |
+| AC-03.06 | Atomically replace records after confirmation | 3 | `tests/acceptance/data-generation.spec.ts`, `tests/integration/generation-job.test.ts` |
 | AC-04.01 | GET returns generated records, metadata, JSON content type, and 200 | 4 | Route integration + acceptance HTTP |
 | AC-04.02 | GET returns an empty data array when no records exist | 4 | Route integration |
 | AC-04.03 | POST validates, creates an ID, returns 201, and appears in later GET | 4 | Route integration + acceptance HTTP |
@@ -29,9 +29,9 @@
 | AC-05.02 | Persist and display Number range and precision | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-constraints.spec.ts` |
 | AC-05.03 | Persist and display an inclusive Date range | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-constraints.spec.ts` |
 | AC-05.04 | Reject maximum Number value below minimum | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-constraints.spec.ts` |
-| AC-05.05 | Generated strings always satisfy configured lengths | 3 | Property/domain test |
-| AC-05.06 | Generated numbers always satisfy range and decimal precision | 3 | Property/domain test |
-| AC-05.07 | Generated dates always satisfy the inclusive range | 3 | Property/domain test |
+| AC-05.05 | Generated strings always satisfy configured lengths | 3 | `src/features/generation/scalar-generator.test.ts` |
+| AC-05.06 | Generated numbers always satisfy range and decimal precision | 3 | `src/features/generation/scalar-generator.test.ts` |
+| AC-05.07 | Generated dates always satisfy the inclusive range | 3 | `src/features/generation/scalar-generator.test.ts` |
 | AC-06.01 | Confirm and delete an unused field | 2 | `src/features/schema/schema-mutations.test.ts`, `src/features/schema/schema-service.test.ts` |
 | AC-06.02 | Cancel field deletion without mutation or notification | 2 | Pending browser coverage when field delete UI is introduced |
 | AC-06.03 | Delete a used field and atomically remove it from records | 2 | `src/features/schema/schema-service.test.ts`, `src/features/records/record-transform.test.ts` |
@@ -39,11 +39,11 @@
 | AC-07.02 | Change field type and clear obsolete constraints | 2 | `src/features/schema/schema-parser.test.ts`, `src/features/schema/schema-mutations.test.ts`, `src/features/schema/components/field-dialog.test.tsx` |
 | AC-07.03 | Reject rename to an existing sibling name | 2 | `src/features/schema/schema-parser.test.ts`, `src/features/schema/schema-mutations.test.ts`, `tests/integration/schema-transaction.test.ts` |
 | AC-08.01 | Add an Object with nested fields | 2 | `src/features/schema/schema-parser.test.ts`, `src/features/schema/components/nested-fields-editor.test.tsx`, `tests/acceptance/nested-schema.spec.ts` |
-| AC-08.02 | Generate and preview nested object data | 3 | Domain + browser |
+| AC-08.02 | Generate and preview nested object data | 3 | `tests/acceptance/nested-data-preview.spec.ts` |
 | AC-08.03 | Add a constrained Array item schema | 2 | `src/features/schema/schema-parser.test.ts`, `src/features/schema/components/nested-fields-editor.test.tsx`, `tests/acceptance/nested-schema.spec.ts` |
 | AC-08.04 | Expand an Object field card to show nested fields | 2 | `src/features/schema/components/nested-fields-editor.test.tsx`, `tests/acceptance/nested-schema.spec.ts` |
-| AC-08.05 | Expand a preview cell to show formatted nested JSON | 3 | Component + browser |
-| AC-08.06 | Generated arrays always satisfy item type and length bounds | 3 | Property/domain test |
+| AC-08.05 | Expand a preview cell to show formatted nested JSON | 3 | `tests/acceptance/nested-data-preview.spec.ts`, `src/features/records/components/data-preview.test.tsx` |
+| AC-08.06 | Generated arrays always satisfy item type and length bounds | 3 | `src/features/generation/record-generator.test.ts` |
 | AC-09.01 | Schema mutation automatically increments and displays the version | 2 | `src/features/versions/version-service.test.ts`, `src/features/schema/schema-service.test.ts`, `tests/acceptance/schema-fields.spec.ts`, `tests/acceptance/schema-versions.spec.ts` |
 | AC-09.02 | Show complete version history and status | 2 | `src/features/versions/components/version-history.test.tsx`, `tests/acceptance/schema-versions.spec.ts` |
 | AC-09.03 | Show version metadata, changes, and snapshot | 2 | `src/features/versions/version-query.ts`, `src/features/versions/components/version-history.test.tsx`, `src/features/versions/components/version-comparison.test.tsx`, `tests/acceptance/schema-versions.spec.ts` |
