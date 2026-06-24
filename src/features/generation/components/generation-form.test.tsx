@@ -6,6 +6,16 @@ import {
   type GenerationFormAction,
 } from "./generation-form";
 
+vi.mock("next/navigation", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/navigation")>();
+  return {
+    ...actual,
+    useRouter: vi.fn(() => ({
+      refresh: vi.fn(),
+    })),
+  };
+});
+
 function renderForm(
   action: GenerationFormAction = vi.fn().mockResolvedValue({
     ok: true,
