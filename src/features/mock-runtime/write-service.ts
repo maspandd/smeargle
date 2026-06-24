@@ -68,5 +68,137 @@ export async function createRecord(context: RuntimeContext, body: unknown) {
     },
   });
 
-  return record.value;
+  return record.value as Record<string, unknown>;
+}
+
+export async function updateRecord(context: RuntimeContext, recordId: string, body: unknown) {
+  if (context.project.dataStatus === "INCOMPATIBLE") {
+    throw new MockRuntimeError("CONFLICT", "Project data is incompatible with current schema");
+  }
+
+  const schemaSnapshot = context.schemaSnapshot as SchemaSnapshot;
+  
+  if (!schemaSnapshot || !schemaSnapshot.fields) {
+    throw new MockRuntimeError("VALIDATION_ERROR", "No active schema found");
+  }
+
+  const existing = await prisma.mockRecord.findFirst({
+    where: {
+      projectId: context.project.id,
+      value: { path: ["id"], equals: recordId }
+    }
+  });
+
+  if (!existing) {
+    throw new MockRuntimeError("RECORD_NOT_FOUND", "Record not found");
+  }
+
+  const recordValue = { ...(body as Prisma.InputJsonObject) };
+  // Force URL ID
+  recordValue.id = recordId;
+
+  // Validate the body
+  const validation = validateRecordValue(schemaSnapshot, recordValue);
+  if (!validation.ok) {
+    throw new MockRuntimeError("VALIDATION_ERROR", "Validation failed", {
+      errors: validation.errors.map(err => ({ message: err }))
+    });
+  }
+
+  const record = await prisma.mockRecord.update({
+    where: { id: existing.id },
+    data: {
+      schemaVersionId: context.project.currentSchemaVersionId!,
+      value: recordValue,
+    },
+  });
+
+  await prisma.auditEvent.create({
+    data: {
+      projectId: context.project.id,
+      action: "DATA_GENERATED",
+      metadata: { recordId, operation: "UPDATE" },
+    },
+  });
+
+  return record.value as Record<string, unknown>;
+}
+
+export async function patchRecord(context: RuntimeContext, recordId: string, body: unknown) {
+  if (context.project.dataStatus === "INCOMPATIBLE") {
+    throw new MockRuntimeError("CONFLICT", "Project data is incompatible with current schema");
+  }
+
+  const existing = await prisma.mockRecord.findFirst({
+    where: {
+      projectId: context.project.id,
+      value: { path: ["id"], equals: recordId }
+    }
+  });
+
+  if (!existing) {
+    throw new MockRuntimeError("RECORD_NOT_FOUND", "Record not found");
+  }
+
+  const existingValue = existing.value as Record<string, unknown>;
+  const patchValue = body as Record<string, unknown>;
+
+  const recordValue = { ...existingValue, ...patchValue };
+  // Force URL ID
+  recordValue.id = recordId;
+
+  const schemaSnapshot = context.schemaSnapshot as SchemaSnapshot;
+  if (!schemaSnapshot || !schemaSnapshot.fields) {
+    throw new MockRuntimeError("VALIDATION_ERROR", "No active schema found");
+  }
+
+  const validation = validateRecordValue(schemaSnapshot, recordValue);
+  if (!validation.ok) {
+    throw new MockRuntimeError("VALIDATION_ERROR", "Validation failed", {
+      errors: validation.errors.map(err => ({ message: err }))
+    });
+  }
+
+  const record = await prisma.mockRecord.update({
+    where: { id: existing.id },
+    data: {
+      schemaVersionId: context.project.currentSchemaVersionId!,
+      value: recordValue as Prisma.InputJsonObject,
+    },
+  });
+
+  await prisma.auditEvent.create({
+    data: {
+      projectId: context.project.id,
+      action: "DATA_GENERATED",
+      metadata: { recordId, operation: "UPDATE" },
+    },
+  });
+
+  return record.value as Record<string, unknown>;
+}
+
+export async function deleteRecord(context: RuntimeContext, recordId: string) {
+  const existing = await prisma.mockRecord.findFirst({
+    where: {
+      projectId: context.project.id,
+      value: { path: ["id"], equals: recordId }
+    }
+  });
+
+  if (!existing) {
+    throw new MockRuntimeError("RECORD_NOT_FOUND", "Record not found");
+  }
+
+  await prisma.mockRecord.delete({
+    where: { id: existing.id }
+  });
+
+  await prisma.auditEvent.create({
+    data: {
+      projectId: context.project.id,
+      action: "DATA_GENERATED",
+      metadata: { recordId, operation: "DELETE" },
+    },
+  });
 }
