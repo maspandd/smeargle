@@ -231,21 +231,21 @@ git commit -m "feat: enrich generated data with llm fallback"
 - Create: `src/app/(app)/projects/[projectId]/data/actions.ts`
 - Create: `src/app/api/projects/[projectId]/generation-jobs/[jobId]/route.ts`
 
-- [ ] **Step 1: Write failing form tests**
+- [x] **Step 1: Write failing form tests**
 
 Assert dynamic button labels (`Generate 10 Records`), missing count error, schema-empty notification, null percentage control, hybrid mode warning, loading state, and exact replacement confirmation text.
 
-- [ ] **Step 2: Run to verify RED**
+- [x] **Step 2: Run to verify RED**
 
 Run: `pnpm vitest run src/features/generation/components/generation-form.test.tsx`
 
 Expected: FAIL because the form is missing.
 
-- [ ] **Step 3: Implement minimum form and Server Action**
+- [x] **Step 3: Implement minimum form and Server Action**
 
 Use server-returned field errors, preserve values after failure, disable duplicate submission, and announce progress through an `aria-live` region. Poll the authorized job-status route with bounded backoff and stop on completed/failed/cancelled.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 pnpm vitest run src/features/generation/components
@@ -264,25 +264,25 @@ git commit -m "feat: add generation workflow"
 - Create: `src/features/records/components/data-preview.test.tsx`
 - Modify: `src/app/(app)/projects/[projectId]/data/page.tsx`
 
-- [ ] **Step 1: Write failing query tests**
+- [x] **Step 1: Write failing query tests**
 
 Assert page bounds, stable record ordering, total count, Viewer access, and no loading of more than the requested page size.
 
-- [ ] **Step 2: Write failing rendering tests**
+- [x] **Step 2: Write failing rendering tests**
 
 Assert `Showing 10 of 10 records`, all schema columns, gray/italic null plus literal text `null`, expandable Object JSON, and expandable Array JSON.
 
-- [ ] **Step 3: Run to verify RED**
+- [x] **Step 3: Run to verify RED**
 
 Run: `pnpm vitest run src/features/records`
 
 Expected: FAIL because queries and preview do not exist.
 
-- [ ] **Step 4: Implement query and accessible preview**
+- [x] **Step 4: Implement query and accessible preview**
 
 Select only one page, derive columns from the record's schema version, render nested JSON in a disclosure control, and show an incompatibility banner with regenerate/delete actions when applicable.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 pnpm vitest run src/features/records
