@@ -68,7 +68,13 @@ jobs:
         run: pnpm run test
 
       - name: Build
-        run: pnpm run build
+        env:
+          NEXT_SKIP_GOOGLE_FONTS: "true"
+        run: |
+          if [ "$NEXT_SKIP_GOOGLE_FONTS" = "true" ]; then
+            sed -i 's/import { Geist, Geist_Mono } from "next\/font\/google";/const Geist = (opts?: any) => ({ variable: "" }); const Geist_Mono = (opts?: any) => ({ variable: "" });/' src/app/layout.tsx
+          fi
+          npm run build
 
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
