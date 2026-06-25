@@ -72,7 +72,7 @@ jobs:
           NEXT_SKIP_GOOGLE_FONTS: "true"
         run: |
           if [ "$NEXT_SKIP_GOOGLE_FONTS" = "true" ]; then
-            sed -i 's/import { Geist, Geist_Mono } from "next\/font\/google";/const Geist = () => ({ variable: "" }); const Geist_Mono = () => ({ variable: "" });/' src/app/layout.tsx
+            sed -i 's/import { Geist, Geist_Mono } from "next\/font\/google";/const Geist = (opts?: any) => ({ variable: "" }); const Geist_Mono = (opts?: any) => ({ variable: "" });/' src/app/layout.tsx
           fi
           npm run build
 
