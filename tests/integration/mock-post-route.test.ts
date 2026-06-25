@@ -11,7 +11,7 @@ describe("Mock API POST Routes Integration", () => {
 
   it("handles POST /api/mock/[routeKey]/[resource] to create a record", async () => {
     const project = await prisma.project.create({
-      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_post_route", dataStatus: "COMPATIBLE" },
+      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_post_route", dataStatus: "COMPATIBLE", tokenRequired: false },
     });
     const schema = await prisma.schemaVersion.create({
       data: { projectId: project.id, major: 1, minor: 0, versionLabel: "v1", changeSummary: "Init", snapshot: { fields: [] } },
@@ -34,7 +34,7 @@ describe("Mock API POST Routes Integration", () => {
 
   it("returns 400 for malformed JSON", async () => {
     await prisma.project.create({
-      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_post_malformed", dataStatus: "COMPATIBLE" },
+      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_post_malformed", dataStatus: "COMPATIBLE", tokenRequired: false },
     });
 
     const req = new NextRequest("http://localhost:3000/api/mock/key_post_malformed/products", {

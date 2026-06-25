@@ -11,7 +11,7 @@ describe("Mock API GET Routes Integration", () => {
 
   it("handles GET /api/mock/[routeKey]/[resource] for collection read", async () => {
     const project = await prisma.project.create({
-      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_collection_route" },
+      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_collection_route", tokenRequired: false },
     });
     const schema = await prisma.schemaVersion.create({
       data: { projectId: project.id, major: 1, minor: 0, versionLabel: "v1", changeSummary: "Init", snapshot: { fields: [] } },
@@ -46,7 +46,7 @@ describe("Mock API GET Routes Integration", () => {
 
   it("handles GET /api/mock/[routeKey]/[resource]/[id] for single record read", async () => {
     const project = await prisma.project.create({
-      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_record_route" },
+      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_record_route", tokenRequired: false },
     });
     const schema = await prisma.schemaVersion.create({
       data: { projectId: project.id, major: 1, minor: 0, versionLabel: "v1", changeSummary: "Init", snapshot: { fields: [] } },

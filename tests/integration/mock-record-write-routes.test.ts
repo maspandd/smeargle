@@ -11,7 +11,7 @@ describe("Mock API Record Write Routes Integration", () => {
 
   async function setupProject() {
     const project = await prisma.project.create({
-      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_write_route", dataStatus: "COMPATIBLE" },
+      data: { name: "Test", baseEndpoint: "/api/products", routeKey: "key_write_route", dataStatus: "COMPATIBLE", tokenRequired: false },
     });
     const schema = await prisma.schemaVersion.create({
       data: { projectId: project.id, major: 1, minor: 0, versionLabel: "v1", changeSummary: "Init", snapshot: { fields: [] } },
