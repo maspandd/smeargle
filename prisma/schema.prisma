@@ -92,6 +92,8 @@ model Project {
   currentMinor           Int                 @default(0)
   dataStatus             ProjectDataStatus   @default(EMPTY)
   tokenRequired          Boolean             @default(true)
+  corsOrigins            String[]            @default(["*"])
+  rateLimit              Int                 @default(100)
   currentSchemaVersionId String?             @unique
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
@@ -222,4 +224,10 @@ model ApiCredential {
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int
+  expiresAt DateTime
 }
