@@ -30,6 +30,8 @@ enum AuditAction {
   MEMBER_REMOVED
   SCHEMA_MUTATED
   DATA_GENERATED
+  API_CREDENTIAL_CREATED
+  API_CREDENTIAL_REVOKED
 }
 
 enum ProjectDataStatus {
@@ -89,6 +91,7 @@ model Project {
   currentMajor           Int                 @default(1)
   currentMinor           Int                 @default(0)
   dataStatus             ProjectDataStatus   @default(EMPTY)
+  tokenRequired          Boolean             @default(true)
   currentSchemaVersionId String?             @unique
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
@@ -98,6 +101,7 @@ model Project {
   currentSchemaVersion   SchemaVersion?      @relation("CurrentSchemaVersion", fields: [currentSchemaVersionId], references: [id], onDelete: SetNull)
   generationJobs         GenerationJob[]
   mockRecords            MockRecord[]
+  apiCredentials         ApiCredential[]
 }
 
 model SchemaVersion {
@@ -204,4 +208,18 @@ model MockRecord {
   @@index([projectId, ordinal])
   @@index([schemaVersionId])
   @@index([generationJobId])
+}
+
+model ApiCredential {
+  id          String    @id @default(cuid())
+  projectId   String
+  label       String
+  tokenHash   String    @unique
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
 }
