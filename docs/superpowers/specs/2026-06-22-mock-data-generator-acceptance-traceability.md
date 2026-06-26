@@ -21,10 +21,10 @@
 | AC-03.04 | Reject generation for an empty schema | 3 | `tests/acceptance/data-generation.spec.ts` |
 | AC-03.05 | Ask before replacing an existing dataset | 3 | `tests/acceptance/data-generation.spec.ts`, `src/features/generation/components/generation-form.test.tsx` |
 | AC-03.06 | Atomically replace records after confirmation | 3 | `tests/acceptance/data-generation.spec.ts`, `tests/integration/generation-job.test.ts` |
-| AC-04.01 | GET returns generated records, metadata, JSON content type, and 200 | 4 | Route integration + acceptance HTTP |
-| AC-04.02 | GET returns an empty data array when no records exist | 4 | Route integration |
-| AC-04.03 | POST validates, creates an ID, returns 201, and appears in later GET | 4 | Route integration + acceptance HTTP |
-| AC-04.04 | Unknown route key returns JSON 404 | 4 | Route integration |
+| AC-04.01 | GET returns generated records, metadata, JSON content type, and 200 | 4 | `tests/integration/mock-get-route.test.ts`, `tests/acceptance/mock-api.spec.ts` |
+| AC-04.02 | GET returns an empty data array when no records exist | 4 | `tests/integration/mock-get-route.test.ts`, `tests/acceptance/mock-api.spec.ts` |
+| AC-04.03 | POST validates, creates an ID, returns 201, and appears in later GET | 4 | `tests/integration/mock-post-route.test.ts`, `tests/acceptance/mock-api.spec.ts` |
+| AC-04.04 | Unknown route key returns JSON 404 | 4 | `tests/integration/mock-get-route.test.ts`, `tests/acceptance/mock-api.spec.ts` |
 | AC-05.01 | Persist and display String length constraints | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-constraints.spec.ts` |
 | AC-05.02 | Persist and display Number range and precision | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-constraints.spec.ts` |
 | AC-05.03 | Persist and display an inclusive Date range | 2 | `src/features/schema/schema-parser.test.ts`, `tests/acceptance/schema-constraints.spec.ts` |
@@ -80,3 +80,12 @@ The selected multi-user and full-CRUD scope requires criteria not present in the
 | Password hashing, session hashing, expiry, logout, and disabled accounts | `src/features/auth/auth-service.test.ts`, `src/app/(auth)/login/actions.test.ts` |
 | Owner, Editor, Viewer, and system-administrator authorization | `tests/acceptance/project-membership.spec.ts`, `src/features/projects/authorization.test.ts`, `tests/integration/project-authorization.test.ts` |
 | Add, change, remove, audit, and protect the final project Owner | `tests/acceptance/project-membership.spec.ts`, `src/features/projects/membership-service.test.ts` |
+
+## Phase 4 Added-Criteria Evidence
+
+| Behavior | Automated coverage |
+|---|---|
+| Record GET, PUT, PATCH, and DELETE | `tests/integration/mock-record-write-routes.test.ts`, `tests/acceptance/mock-api.spec.ts` |
+| Token creation, one-time display, use, rotation, revocation, and expiry | `src/features/mock-runtime/credential-service.test.ts`, `tests/acceptance/mock-api-security.spec.ts` |
+| CORS allowlists and route-key rate limiting | `src/features/mock-runtime/cors-policy.test.ts`, `src/features/mock-runtime/rate-limit.test.ts`, `tests/acceptance/mock-api-security.spec.ts` |
+| Health, performance, migration, and recovery release gates | `tests/performance/mock-get-load.test.ts` |
