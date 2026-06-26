@@ -65,13 +65,10 @@ async function main() {
           rateLimit: input.rateLimit || 100,
           schemaVersions: {
             create: {
-              schema: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  price: { type: "number" }
-                }
-              },
+              major: 1,
+              minor: 0,
+              versionLabel: "v1",
+              changeSummary: "Initial schema",
               snapshot: {
                 type: "object",
                 properties: {
@@ -90,7 +87,9 @@ async function main() {
             id: `rec_${i}`,
             projectId: project.id,
             schemaVersionId: project.schemaVersions[0].id,
-            data: r
+            value: r,
+            ordinal: i,
+            source: "GENERATED"
           }))
         });
       }
