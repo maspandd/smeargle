@@ -54,6 +54,56 @@ async function main() {
           role: input.role,
         },
       });
+    case "seed-mock-api":
+      const project = await prisma.project.create({
+        data: {
+          name: "Mock API",
+          baseEndpoint: "/api/items",
+          routeKey: input.routeKey || randomBytes(18).toString("base64url"),
+          tokenRequired: input.tokenRequired || false,
+          corsOrigins: input.corsOrigins || [],
+          rateLimit: input.rateLimit || 100,
+          schemaVersions: {
+            create: {
+              schema: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  price: { type: "number" }
+                }
+              },
+              snapshot: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  price: { type: "number" }
+                }
+              },
+            }
+          }
+        },
+        include: { schemaVersions: true }
+      });
+      if (input.records) {
+        await prisma.mockRecord.createMany({
+          data: input.records.map((r, i) => ({
+            id: `rec_${i}`,
+            projectId: project.id,
+            schemaVersionId: project.schemaVersions[0].id,
+            data: r
+          }))
+        });
+      }
+      if (input.tokenHash) {
+        await prisma.apiCredential.create({
+          data: {
+            projectId: project.id,
+            label: "Test Token",
+            tokenHash: input.tokenHash,
+          }
+        });
+      }
+      return project;
     case "count-projects":
       return prisma.project.count();
     default:
