@@ -13,7 +13,7 @@ describe("Mock API Performance", () => {
   it("handles GET collection under load with p95 < 200ms", async () => {
     // 1. Seed 1000 records
     const project = await prisma.project.create({
-      data: { name: "Load Test", baseEndpoint: "/api/items", routeKey: "load_key", tokenRequired: false },
+      data: { name: "Load Test", baseEndpoint: "/api/items", routeKey: "load_key", tokenRequired: false, rateLimit: 1000 },
     });
     const schema = await prisma.schemaVersion.create({
       data: { projectId: project.id, major: 1, minor: 0, versionLabel: "v1", changeSummary: "Init", snapshot: { fields: [] } },
