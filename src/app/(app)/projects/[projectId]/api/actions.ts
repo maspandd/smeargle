@@ -24,13 +24,20 @@ export async function revokeTokenAction(projectId: string, credentialId: string)
   revalidatePath(`/projects/${projectId}/api`);
 }
 
-export async function toggleTokenRequiredAction(projectId: string, required: boolean) {
+export async function saveRuntimeSettingsAction(
+  projectId: string,
+  settings: { corsOrigins: string[]; rateLimit: number; tokenRequired: boolean }
+) {
   const user = await requireUser();
   await requireProjectCapability({ projectId, userId: user.id, capability: "manage_api" });
   
   await prisma.project.update({
     where: { id: projectId },
-    data: { tokenRequired: required },
+    data: {
+      corsOrigins: settings.corsOrigins,
+      rateLimit: settings.rateLimit,
+      tokenRequired: settings.tokenRequired,
+    },
   });
   
   revalidatePath(`/projects/${projectId}/api`);
